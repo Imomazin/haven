@@ -1,0 +1,46 @@
+{
+  "name": "haven",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Haven — housing risk and intervention platform (CivTech 12.6 demonstrator)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts",
+    "db:seed": "tsx src/seed/seed.ts",
+    "db:seed:sql": "tsx src/seed/seed.ts --emit-sql",
+    "db:reset": "tsx src/seed/seed.ts --reset"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "drizzle-orm": "^0.36.4",
+    "next": "15.5.4",
+    "postgres": "^3.4.5",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "recharts": "^2.15.0",
+    "server-only": "^0.0.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "19.1.0",
+    "@types/react-dom": "19.1.0",
+    "@eslint/eslintrc": "^3.2.0",
+    "autoprefixer": "^10.4.20",
+    "drizzle-kit": "^0.28.1",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "15.5.4",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
