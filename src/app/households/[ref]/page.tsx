@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getHouseholdByRef } from "@/db/queries";
 import { PageHeader, Card, SectionTitle, Definition } from "@/components/ui";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RiskExplanation } from "@/components/risk-explanation";
 import { StatusPill } from "@/components/severity";
 import { label } from "@/lib/format";
@@ -16,6 +17,7 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
 
   return (
     <div>
+      <Breadcrumbs items={[{ label: "Households", href: "/households" }, { label: h.ref }]} />
       <PageHeader
         title={`Household ${h.ref}`}
         description={`At ${rec.property.ref} · ${rec.property.locality}`}

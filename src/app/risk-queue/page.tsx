@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { getRiskQueue, getFilterOptions } from "@/db/queries";
 import { PageHeader, Table, EmptyState } from "@/components/ui";
-import { RiskBadge, UrgencyBadge, ConfidenceBadge, StatusPill, ReviewBadge } from "@/components/severity";
+import { RiskBadge, UrgencyBadge, ConfidenceBadge, ReviewBadge } from "@/components/severity";
 import { label, formatDate } from "@/lib/format";
 import { RISK_BANDS } from "@/lib/types";
+import { openCaseForHousehold } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ export default async function RiskQueuePage({ searchParams }: { searchParams: Pr
   const sp = await searchParams;
   const filters = { band: sp.band, locality: sp.locality, propertyType: sp.propertyType, caseStatus: sp.caseStatus, q: sp.q, sort: sp.sort };
   const [rows, options] = await Promise.all([getRiskQueue(filters), getFilterOptions()]);
+  const exportQs = new URLSearchParams(Object.entries(sp).filter(([, v]) => v)).toString();
 
   return (
     <div>
@@ -61,6 +63,7 @@ export default async function RiskQueuePage({ searchParams }: { searchParams: Pr
         </label>
         <button type="submit" className="btn-primary">Apply</button>
         <Link href="/risk-queue" className="btn-secondary">Reset</Link>
+        <a href={`/risk-queue/export${exportQs ? `?${exportQs}` : ""}`} className="btn-secondary">Export CSV</a>
         <span className="ml-auto self-center text-sm text-navy-500">{rows.length} household{rows.length === 1 ? "" : "s"}</span>
       </form>
 
@@ -124,9 +127,10 @@ export default async function RiskQueuePage({ searchParams }: { searchParams: Pr
                   {r.caseRef ? (
                     <Link href={`/cases/${r.caseRef}`} className="text-teal-700 underline">{r.caseRef}</Link>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-xs">
-                      <StatusPill status="open" /> none
-                    </span>
+                    <form action={openCaseForHousehold}>
+                      <input type="hidden" name="householdRef" value={r.householdRef} />
+                      <button className="btn-teal py-1 text-xs">Open case</button>
+                    </form>
                   )}
                 </td>
               </tr>

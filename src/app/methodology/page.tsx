@@ -1,4 +1,4 @@
-import { PageHeader, Card, SectionTitle, Table } from "@/components/ui";
+import { PageHeader, Card, SectionTitle, Table, LinkButton } from "@/components/ui";
 import { DIMENSION_LABELS, DIMENSION_WEIGHTS, BAND_THRESHOLDS, URGENCY_THRESHOLDS, CONFIDENCE_THRESHOLDS, RISK_MODEL_VERSION } from "@/lib/constants";
 import type { RiskDimension } from "@/lib/types";
 
@@ -8,7 +8,11 @@ export default function MethodologyPage() {
   const dims = Object.keys(DIMENSION_LABELS) as RiskDimension[];
   return (
     <div>
-      <PageHeader title="Methodology" description={`How Haven scores risk. Transparent, rule-based, versioned (${RISK_MODEL_VERSION}). Not clinically validated.`} />
+      <PageHeader
+        title="Methodology"
+        description={`How Haven scores risk. Transparent, rule-based, versioned (${RISK_MODEL_VERSION}). Not clinically validated.`}
+        actions={<LinkButton href="/simulator" variant="teal">Try the risk simulator →</LinkButton>}
+      />
 
       <Card className="mb-4">
         <SectionTitle>Overall score</SectionTitle>

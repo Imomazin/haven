@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getPortfolioStats, getRiskQueue } from "@/db/queries";
-import { PageHeader, StatTile, Card, SectionTitle, LinkButton, Table } from "@/components/ui";
+import { StatTile, Card, SectionTitle, LinkButton, Table } from "@/components/ui";
 import { RiskBadge, UrgencyBadge } from "@/components/severity";
 import { label } from "@/lib/format";
 
@@ -11,13 +11,26 @@ export default async function OverviewPage() {
   const queue = await getRiskQueue({});
   const top = queue.slice(0, 6);
 
+  const totalAtRisk = stats.bandCounts.Critical + stats.bandCounts.High;
   return (
     <div>
-      <PageHeader
-        title="Portfolio overview"
-        description="Which households and properties need attention now, why, and what should happen next. Signals across property condition, fuel poverty, environment and household circumstances are combined into a single prioritised view."
-        actions={<LinkButton href="/risk-queue" variant="primary">Open risk queue →</LinkButton>}
-      />
+      <section className="hero mb-6">
+        <p className="text-xs font-semibold uppercase tracking-wider text-teal-200">Portfolio overview · CivTech 12.6</p>
+        <h1 className="mt-2 max-w-3xl text-2xl font-bold leading-snug sm:text-3xl">
+          Which households and properties need attention now, why, and what should happen next?
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm text-navy-100">
+          Haven combines property condition, fuel poverty, environment and household circumstances into one prioritised,
+          explainable view — turning fragmented data into action and measured risk reduction.
+        </p>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <LinkButton href="/risk-queue" variant="teal">Open risk queue →</LinkButton>
+          <LinkButton href="/demo" variant="secondary">Guided demo</LinkButton>
+          <span className="ml-1 rounded-full bg-navy-900/40 px-3 py-1 text-xs text-teal-100">
+            {totalAtRisk} household{totalAtRisk === 1 ? "" : "s"} at High or Critical risk · {stats.overdueActions} overdue
+          </span>
+        </div>
+      </section>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <StatTile label="Properties monitored" value={stats.propertiesMonitored} />

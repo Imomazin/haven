@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPropertyByRef } from "@/db/queries";
 import { PageHeader, Card, SectionTitle, Definition } from "@/components/ui";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RiskExplanation } from "@/components/risk-explanation";
 import { StatusPill } from "@/components/severity";
 import { label } from "@/lib/format";
@@ -16,6 +17,7 @@ export default async function PropertyDetail({ params }: { params: Promise<{ ref
 
   return (
     <div>
+      <Breadcrumbs items={[{ label: "Properties", href: "/properties" }, { label: p.ref }]} />
       <PageHeader
         title={`Property ${p.ref}`}
         description={`${label(p.propertyType)} · ${p.locality} · built ${label(p.constructionEra)}`}

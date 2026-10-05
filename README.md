@@ -72,8 +72,13 @@ access is server-side; every data page is dynamic. Data adapters are modular int
 | **Analytics** | Risk by geography & type, intervention effectiveness, recurring issues |
 | **Governance** | Data sources, connector status, lawful-basis placeholders, audit |
 | **Methodology** | Exact scoring rules (transparent) |
+| **Simulator** | Interactive what-if: move any signal, watch the score/drivers/recommendations recompute live |
 | **Demo** | 6–8 minute presenter script + Reset Demo Data |
 | **About** | Product, challenge, partnership, disclaimer |
+
+The Risk Queue supports **opening a case** for any untracked household (generates the case,
+engine-recommended interventions and opening timeline) and **CSV export** of the filtered view.
+A GitHub Actions workflow runs lint + typecheck + test + build on every push and PR.
 
 ## Local setup
 

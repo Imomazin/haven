@@ -4,6 +4,7 @@ import { getCaseByRef } from "@/db/queries";
 import { recommendInterventions } from "@/lib/intervention-engine";
 import { toRiskInput } from "@/db/queries";
 import { PageHeader, Card, SectionTitle, Definition, Prototype } from "@/components/ui";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RiskExplanation } from "@/components/risk-explanation";
 import { RiskBadge, StatusPill, UrgencyBadge } from "@/components/severity";
 import { label, formatDate, formatDateTime, daysBetween } from "@/lib/format";
@@ -27,6 +28,7 @@ export default async function CaseDetail({ params }: { params: Promise<{ ref: st
 
   return (
     <div>
+      <Breadcrumbs items={[{ label: "Cases", href: "/cases" }, { label: c.ref }]} />
       <PageHeader
         title={c.ref}
         description={c.title}
