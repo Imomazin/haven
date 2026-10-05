@@ -44,34 +44,36 @@ export function getDemoOverviewData(): { stats: PortfolioStats; queue: QueueRow[
       : null,
   };
 
-  const queue: QueueRow[] = current
-    .map((a) => {
-      const household = ds.households.find((h) => h.id === a.householdId);
-      const property = ds.properties.find((p) => p.id === a.propertyId);
-      if (!household || !property) return null;
-      const activeCase = ds.cases.find((c) => c.householdId === household.id && c.status !== "closed") ?? null;
-      return {
-        householdRef: household.ref,
-        propertyRef: property.ref,
-        locality: property.locality,
-        propertyType: property.propertyType,
-        overallScore: a.overallScore,
-        band: a.band,
-        primaryRisk: a.primaryRisk,
-        secondaryRisk: a.secondaryRisk,
-        confidence: a.confidence,
-        urgency: a.urgency,
-        reviewStatus: a.reviewStatus,
-        caseRef: activeCase?.ref ?? null,
-        caseStatus: activeCase?.status ?? null,
-        ownerTeam: activeCase?.ownerTeam ?? null,
-        ownerName: activeCase?.ownerName ?? null,
-        responseDueAt: activeCase?.responseDueAt ? new Date(activeCase.responseDueAt) : null,
-        daysOpen: activeCase ? Math.max(0, Math.floor((Date.now() - new Date(activeCase.openedAt).getTime()) / 86400000)) : null,
-      } satisfies QueueRow;
-    })
-    .filter((r): r is QueueRow => r !== null)
-    .sort((a, b) => b.overallScore - a.overallScore);
+  const queue: QueueRow[] = [];
+  for (const a of current) {
+    const household = ds.households.find((h) => h.id === a.householdId);
+    const property = ds.properties.find((p) => p.id === a.propertyId);
+    if (!household || !property) continue;
+
+    const activeCase = ds.cases.find((c) => c.householdId === household.id && c.status !== "closed") ?? null;
+    queue.push({
+      householdRef: household.ref,
+      propertyRef: property.ref,
+      locality: property.locality,
+      propertyType: property.propertyType,
+      overallScore: a.overallScore,
+      band: a.band,
+      primaryRisk: a.primaryRisk,
+      secondaryRisk: a.secondaryRisk,
+      confidence: a.confidence,
+      urgency: a.urgency,
+      reviewStatus: a.reviewStatus,
+      caseRef: activeCase?.ref ?? null,
+      caseStatus: activeCase?.status ?? null,
+      ownerTeam: activeCase?.ownerTeam ?? null,
+      ownerName: activeCase?.ownerName ?? null,
+      responseDueAt: activeCase?.responseDueAt ? new Date(activeCase.responseDueAt) : null,
+      daysOpen: activeCase
+        ? Math.max(0, Math.floor((Date.now() - new Date(activeCase.openedAt).getTime()) / 86400000))
+        : null,
+    });
+  }
+  queue.sort((a, b) => b.overallScore - a.overallScore);
 
   return { stats, queue };
 }
