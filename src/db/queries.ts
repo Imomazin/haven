@@ -14,7 +14,10 @@ import {
   type Household,
 } from "./schema";
 import { assessRisk } from "@/lib/risk-engine";
-import type { RiskInput, RiskAssessment } from "@/lib/types";
+import type { RiskInput } from "@/lib/types";
+import { demo } from "./demo-store";
+import { hasDb } from "./view-types";
+export type { PortfolioStats, QueueRow, PropertyRecord } from "./view-types";
 
 // Map DB rows into the risk-engine input shape.
 export function toRiskInput(p: Property, h: Household): RiskInput {
@@ -52,26 +55,10 @@ export function toRiskInput(p: Property, h: Household): RiskInput {
   };
 }
 
-export interface PortfolioStats {
-  propertiesMonitored: number;
-  householdsRepresented: number;
-  bandCounts: { Critical: number; High: number; Moderate: number; Low: number };
-  casesOpen: number;
-  casesByStatus: Record<string, number>;
-  openInterventions: number;
-  overdueActions: number;
-  fuelPovertyCount: number;
-  dampRiskCount: number;
-  mouldRiskCount: number;
-  coldHomeCount: number;
-  fabricRiskCount: number;
-  vulnerabilityCount: number;
-  casesImproving: number;
-  casesWorsening: number;
-  avgResolutionDays: number | null;
-}
+import type { PortfolioStats, QueueRow, PropertyRecord } from "./view-types";
 
 export async function getPortfolioStats(): Promise<PortfolioStats> {
+  if (!hasDb()) return demo.getPortfolioStats();
   const db = getDb();
   const now = new Date();
 
@@ -175,26 +162,6 @@ export async function getPortfolioStats(): Promise<PortfolioStats> {
   };
 }
 
-export interface QueueRow {
-  householdRef: string;
-  propertyRef: string;
-  locality: string;
-  propertyType: string;
-  overallScore: number;
-  band: string;
-  primaryRisk: string;
-  secondaryRisk: string | null;
-  confidence: string;
-  urgency: string;
-  reviewStatus: string;
-  caseRef: string | null;
-  caseStatus: string | null;
-  ownerTeam: string | null;
-  ownerName: string | null;
-  responseDueAt: Date | null;
-  daysOpen: number | null;
-}
-
 export async function getRiskQueue(filters: {
   band?: string;
   locality?: string;
@@ -203,6 +170,7 @@ export async function getRiskQueue(filters: {
   q?: string;
   sort?: string;
 }): Promise<QueueRow[]> {
+  if (!hasDb()) return demo.getRiskQueue(filters);
   const db = getDb();
   const rows = await db
     .select({
@@ -273,6 +241,7 @@ export async function getRiskQueue(filters: {
 }
 
 export async function getFilterOptions() {
+  if (!hasDb()) return demo.getFilterOptions();
   const db = getDb();
   const locs = await db.selectDistinct({ v: properties.locality }).from(properties).orderBy(asc(properties.locality));
   const types = await db.selectDistinct({ v: properties.propertyType }).from(properties).orderBy(asc(properties.propertyType));
@@ -282,14 +251,8 @@ export async function getFilterOptions() {
   };
 }
 
-export interface PropertyRecord {
-  property: Property;
-  household: Household | null;
-  assessment: RiskAssessment | null;
-  cases: { ref: string; status: string; title: string }[];
-}
-
 export async function getProperties(filters: { locality?: string; propertyType?: string; band?: string; q?: string }) {
+  if (!hasDb()) return demo.getProperties(filters);
   const db = getDb();
   const rows = await db
     .select({ property: properties, household: households, band: riskAssessments.band, score: riskAssessments.overallScore })
@@ -309,6 +272,7 @@ export async function getProperties(filters: { locality?: string; propertyType?:
 }
 
 export async function getPropertyByRef(ref: string): Promise<PropertyRecord | null> {
+  if (!hasDb()) return demo.getPropertyByRef(ref) as unknown as PropertyRecord | null;
   const db = getDb();
   const [p] = await db.select().from(properties).where(eq(properties.ref, ref)).limit(1);
   if (!p) return null;
@@ -322,6 +286,7 @@ export async function getPropertyByRef(ref: string): Promise<PropertyRecord | nu
 }
 
 export async function getHouseholds(filters: { fuelPoverty?: string; band?: string; q?: string }) {
+  if (!hasDb()) return demo.getHouseholds(filters);
   const db = getDb();
   const rows = await db
     .select({ household: households, property: properties, band: riskAssessments.band, score: riskAssessments.overallScore })
@@ -340,6 +305,7 @@ export async function getHouseholds(filters: { fuelPoverty?: string; band?: stri
 }
 
 export async function getHouseholdByRef(ref: string) {
+  if (!hasDb()) return demo.getHouseholdByRef(ref);
   const db = getDb();
   const [h] = await db.select().from(households).where(eq(households.ref, ref)).limit(1);
   if (!h) return null;
@@ -350,6 +316,7 @@ export async function getHouseholdByRef(ref: string) {
 }
 
 export async function getCases(filters: { status?: string; team?: string; band?: string; q?: string }) {
+  if (!hasDb()) return demo.getCases(filters);
   const db = getDb();
   return db
     .select({ c: cases, locality: properties.locality, propertyRef: properties.ref })
@@ -367,6 +334,7 @@ export async function getCases(filters: { status?: string; team?: string; band?:
 }
 
 export async function getCaseByRef(ref: string) {
+  if (!hasDb()) return demo.getCaseByRef(ref);
   const db = getDb();
   const [c] = await db.select().from(cases).where(eq(cases.ref, ref)).limit(1);
   if (!c) return null;
@@ -380,6 +348,7 @@ export async function getCaseByRef(ref: string) {
 }
 
 export async function getInterventionsList(filters: { status?: string; team?: string; type?: string }) {
+  if (!hasDb()) return demo.getInterventionsList(filters);
   const db = getDb();
   return db
     .select({ i: interventions, caseRef: cases.ref, locality: properties.locality })
@@ -397,17 +366,20 @@ export async function getInterventionsList(filters: { status?: string; team?: st
 }
 
 export async function getDataSources() {
+  if (!hasDb()) return demo.getDataSources();
   const db = getDb();
   return db.select().from(dataSources).orderBy(asc(dataSources.id));
 }
 
 export async function getRecentAudit(limit = 40) {
+  if (!hasDb()) return demo.getRecentAudit(limit);
   const db = getDb();
   return db.select().from(auditEvents).orderBy(desc(auditEvents.createdAt)).limit(limit);
 }
 
 // Analytics aggregates.
 export async function getAnalytics() {
+  if (!hasDb()) return demo.getAnalytics();
   const db = getDb();
   const byLocality = await db
     .select({ locality: properties.locality, band: riskAssessments.band, n: count() })
