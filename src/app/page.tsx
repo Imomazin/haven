@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getPortfolioStats, getRiskQueue } from "@/db/queries";
+import { getDemoOverviewData } from "@/lib/demo-data";
 import { StatTile, Card, SectionTitle, LinkButton, Table } from "@/components/ui";
 import { RiskBadge, UrgencyBadge } from "@/components/severity";
 import { label } from "@/lib/format";
@@ -7,10 +8,21 @@ import { label } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function OverviewPage() {
-  const stats = await getPortfolioStats();
-  const queue = await getRiskQueue({});
-  const top = queue.slice(0, 6);
+  let stats;
+  let queue;
 
+  if (!process.env.DATABASE_URL) {
+    ({ stats, queue } = getDemoOverviewData());
+  } else {
+    try {
+      [stats, queue] = await Promise.all([getPortfolioStats(), getRiskQueue({})]);
+    } catch (error) {
+      console.error("[haven] Database unavailable, using deterministic demo data.", error);
+      ({ stats, queue } = getDemoOverviewData());
+    }
+  }
+
+  const top = queue.slice(0, 6);
   const totalAtRisk = stats.bandCounts.Critical + stats.bandCounts.High;
   return (
     <div>
