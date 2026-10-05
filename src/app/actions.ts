@@ -197,7 +197,7 @@ export async function openCaseForHousehold(formData: FormData) {
   if (!householdRef) return;
 
   if (!hasDb()) {
-    const ref = demo.openCaseForHousehold(householdRef, ACTOR);
+    const ref = demo.openCaseForHousehold(householdRef);
     if (!ref) return;
     revalidatePath("/risk-queue");
     revalidatePath("/cases");

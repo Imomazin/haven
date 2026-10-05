@@ -9,7 +9,6 @@ import { buildDataset, type Dataset, type PropertyRow, type HouseholdRow } from 
 import { assessRisk } from "@/lib/risk-engine";
 import { recommendInterventions } from "@/lib/intervention-engine";
 import { planNewCase } from "@/lib/case-planning";
-import { bandForScore } from "@/lib/constants";
 import type { RiskInput, RiskAssessment } from "@/lib/types";
 import type { PortfolioStats, QueueRow } from "./view-types";
 
@@ -286,7 +285,7 @@ export const demo = {
   completedCount(caseId: number) {
     return db().interventions.filter((i) => i.caseId === caseId && i.status === "completed").length;
   },
-  openCaseForHousehold(householdRef: string, actor: string): string | null {
+  openCaseForHousehold(householdRef: string): string | null {
     const d = db();
     const h = d.households.find((x) => x.ref === householdRef);
     if (!h) return null;

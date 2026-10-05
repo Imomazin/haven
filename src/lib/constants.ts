@@ -84,34 +84,18 @@ export function confidenceForScore(score: number): ConfidenceCategory {
 // never communicated by colour alone (see docs/methodology.md, accessibility).
 export const BAND_PRESENTATION: Record<
   RiskBand,
-  { label: string; textClass: string; bgClass: string; borderClass: string; short: string }
+  { label: string; textClass: string; bgClass: string; borderClass: string; dotClass: string; short: string }
 > = {
-  Low: {
-    label: "Low",
-    short: "Monitor",
-    textClass: "text-teal-800",
-    bgClass: "bg-teal-50",
-    borderClass: "border-teal-300",
-  },
-  Moderate: {
-    label: "Moderate",
-    short: "Plan action",
-    textClass: "text-amber-800",
-    bgClass: "bg-amber-50",
-    borderClass: "border-amber-300",
-  },
-  High: {
-    label: "High",
-    short: "Act soon",
-    textClass: "text-orange-900",
-    bgClass: "bg-orange-50",
-    borderClass: "border-orange-300",
-  },
-  Critical: {
-    label: "Critical",
-    short: "Act now",
-    textClass: "text-red-900",
-    bgClass: "bg-red-50",
-    borderClass: "border-red-300",
-  },
+  Low: { label: "Low", short: "Monitor", textClass: "text-risk-low-700", bgClass: "bg-risk-low-50", borderClass: "border-risk-low-200", dotClass: "bg-risk-low-500" },
+  Moderate: { label: "Moderate", short: "Plan action", textClass: "text-risk-moderate-700", bgClass: "bg-risk-moderate-50", borderClass: "border-risk-moderate-200", dotClass: "bg-risk-moderate-500" },
+  High: { label: "High", short: "Act soon", textClass: "text-risk-high-700", bgClass: "bg-risk-high-50", borderClass: "border-risk-high-200", dotClass: "bg-risk-high-500" },
+  Critical: { label: "Critical", short: "Act now", textClass: "text-risk-critical-700", bgClass: "bg-risk-critical-50", borderClass: "border-risk-critical-200", dotClass: "bg-risk-critical-500" },
+};
+
+// Hex values for charts and inline SVG (keep in step with the risk palette).
+export const BAND_HEX: Record<RiskBand, string> = {
+  Critical: "#a1332a",
+  High: "#bf5a2c",
+  Moderate: "#8f6410",
+  Low: "#3f6b4e",
 };

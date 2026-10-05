@@ -2,85 +2,82 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`card p-4 ${className}`}>{children}</div>;
+  return <section className={`panel p-5 ${className}`}>{children}</section>;
 }
 
-export function SectionTitle({ children, sub }: { children: ReactNode; sub?: string }) {
+export function SectionTitle({ children, sub, action }: { children: ReactNode; sub?: string; action?: ReactNode }) {
   return (
-    <div className="mb-3">
-      <h2 className="text-lg font-semibold text-navy-800">{children}</h2>
-      {sub && <p className="text-sm text-navy-500">{sub}</p>}
-    </div>
-  );
-}
-
-export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
-  return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-4 flex items-start justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-bold text-navy-900">{title}</h1>
-        {description && <p className="mt-1 max-w-2xl text-sm text-navy-600">{description}</p>}
+        <h2 className="text-[15px] font-semibold text-ink-900">{children}</h2>
+        {sub && <p className="mt-0.5 text-xs text-graphite-500">{sub}</p>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {action}
     </div>
   );
 }
 
-export function StatTile({
-  label,
-  value,
-  hint,
-  tone = "default",
-}: {
-  label: string;
-  value: ReactNode;
-  hint?: string;
-  tone?: "default" | "critical" | "high" | "moderate" | "low" | "teal";
-}) {
-  const toneRing: Record<string, string> = {
-    default: "border-navy-100",
-    critical: "border-red-300",
-    high: "border-orange-300",
-    moderate: "border-amber-300",
-    low: "border-teal-300",
-    teal: "border-teal-300",
-  };
-  const toneText: Record<string, string> = {
-    default: "text-navy-900",
-    critical: "text-red-900",
-    high: "text-orange-900",
-    moderate: "text-amber-800",
-    low: "text-teal-800",
-    teal: "text-teal-800",
-  };
+export function PageHeader({ title, description, actions, eyebrow }: { title: string; description?: string; actions?: ReactNode; eyebrow?: string }) {
   return (
-    <div className={`card border-l-4 ${toneRing[tone]} p-4`}>
-      <div className="text-xs font-medium uppercase tracking-wide text-navy-500">{label}</div>
-      <div className={`mt-1 text-2xl font-bold tabular-nums ${toneText[tone]}`}>{value}</div>
-      {hint && <div className="mt-1 text-xs text-navy-500">{hint}</div>}
+    <div className="mb-6 flex flex-col gap-3 border-b border-graphite-200/70 pb-5 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        {eyebrow && <p className="eyebrow mb-1.5">{eyebrow}</p>}
+        <h1 className="font-display text-[26px] font-semibold leading-tight text-ink-900">{title}</h1>
+        {description && <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-graphite-600">{description}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+const METRIC_ACCENT: Record<string, string> = {
+  default: "text-ink-900",
+  critical: "text-risk-critical-700",
+  high: "text-risk-high-700",
+  moderate: "text-risk-moderate-700",
+  low: "text-risk-low-700",
+  ink: "text-ink-800",
+  teal: "text-ink-800",
+};
+const METRIC_RAIL: Record<string, string> = {
+  default: "border-graphite-200",
+  critical: "border-risk-critical-500",
+  high: "border-risk-high-500",
+  moderate: "border-risk-moderate-500",
+  low: "border-risk-low-500",
+  ink: "border-ink-700",
+  teal: "border-ink-700",
+};
+
+export function StatTile({ label, value, hint, tone = "default" }: { label: string; value: ReactNode; hint?: string; tone?: keyof typeof METRIC_ACCENT }) {
+  return (
+    <div className={`panel rail ${METRIC_RAIL[tone]} p-4`}>
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-graphite-500">{label}</div>
+      <div className={`mt-1.5 text-[26px] font-semibold leading-none tabular-nums ${METRIC_ACCENT[tone]}`}>{value}</div>
+      {hint && <div className="mt-1.5 text-xs text-graphite-500">{hint}</div>}
     </div>
   );
 }
 
 export function Table({ children }: { children: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-navy-100 bg-white">
-      <table className="min-w-full divide-y divide-navy-100">{children}</table>
+    <div className="overflow-x-auto rounded-lg border border-graphite-200/70 bg-white shadow-subtle">
+      <table className="min-w-full border-collapse">{children}</table>
     </div>
   );
 }
 
 export function Definition({ term, children }: { term: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-0.5 border-b border-navy-50 py-2 sm:flex-row sm:justify-between sm:gap-4">
-      <dt className="text-sm font-medium text-navy-500">{term}</dt>
-      <dd className="text-sm text-navy-900 sm:text-right">{children}</dd>
+    <div className="flex items-baseline justify-between gap-4 border-b border-graphite-100 py-2 last:border-0">
+      <dt className="text-xs text-graphite-500">{term}</dt>
+      <dd className="text-right text-sm font-medium text-ink-900">{children}</dd>
     </div>
   );
 }
 
-export function LinkButton({ href, children, variant = "secondary" }: { href: string; children: ReactNode; variant?: "primary" | "secondary" | "teal" }) {
-  const cls = variant === "primary" ? "btn-primary" : variant === "teal" ? "btn-teal" : "btn-secondary";
+export function LinkButton({ href, children, variant = "secondary" }: { href: string; children: ReactNode; variant?: "primary" | "secondary" | "accent" | "teal" }) {
+  const cls = variant === "primary" ? "btn-primary" : variant === "accent" || variant === "teal" ? "btn-accent" : "btn-secondary";
   return (
     <Link href={href} className={cls}>
       {children}
@@ -89,30 +86,40 @@ export function LinkButton({ href, children, variant = "secondary" }: { href: st
 }
 
 export function Meter({ value, max = 100, ariaLabel }: { value: number; max?: number; ariaLabel: string }) {
-  const pct = Math.max(0, Math.min(100, (value / max) * 100));
-  const color = value >= 75 ? "bg-red-500" : value >= 50 ? "bg-orange-500" : value >= 25 ? "bg-amber-500" : "bg-teal-500";
+  const pct = Math.max(2, Math.min(100, (value / max) * 100));
+  const color = value >= 75 ? "bg-risk-critical-500" : value >= 50 ? "bg-risk-high-500" : value >= 25 ? "bg-risk-moderate-500" : "bg-risk-low-500";
   return (
-    <div
-      className="h-2 w-full overflow-hidden rounded-full bg-navy-100"
-      role="meter"
-      aria-valuenow={value}
-      aria-valuemin={0}
-      aria-valuemax={max}
-      aria-label={ariaLabel}
-    >
-      <div className={`h-full ${color}`} style={{ width: `${pct}%` }} />
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-graphite-100" role="meter" aria-valuenow={value} aria-valuemin={0} aria-valuemax={max} aria-label={ariaLabel}>
+      <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
-export function Prototype({ children = "Prototype response rule" }: { children?: ReactNode }) {
+// Segmented distribution bar (e.g. band mix), labelled — not colour-only.
+export function SegmentBar({ segments }: { segments: { label: string; value: number; className: string }[] }) {
+  const total = segments.reduce((s, x) => s + x.value, 0) || 1;
   return (
-    <span className="inline-flex items-center rounded border border-navy-200 bg-navy-50 px-1.5 py-0.5 text-[11px] font-medium text-navy-600">
+    <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-graphite-100" role="img" aria-label={segments.map((s) => `${s.label} ${s.value}`).join(", ")}>
+      {segments.map((s) => (
+        <div key={s.label} className={s.className} style={{ width: `${(s.value / total) * 100}%` }} title={`${s.label}: ${s.value}`} />
+      ))}
+    </div>
+  );
+}
+
+export function Prototype({ children = "Prototype rule" }: { children?: ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded border border-graphite-300 bg-limestone-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-graphite-600">
       {children}
     </span>
   );
 }
 
-export function EmptyState({ children }: { children: ReactNode }) {
-  return <div className="rounded-lg border border-dashed border-navy-200 bg-white p-8 text-center text-sm text-navy-500">{children}</div>;
+export function EmptyState({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <div className="rounded-lg border border-dashed border-graphite-300 bg-white/60 p-10 text-center">
+      {title && <p className="text-sm font-medium text-ink-900">{title}</p>}
+      <p className="mx-auto mt-1 max-w-sm text-sm text-graphite-500">{children}</p>
+    </div>
+  );
 }
