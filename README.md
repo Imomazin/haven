@@ -132,13 +132,27 @@ npm ci && npm run lint && npm run typecheck && npm run test && npm run build
 
 ## Deploy to Vercel
 
-1. Import `Imomazin/haven` into Vercel (project name `haven`, or `haven-civtech` if taken).
-2. Add `DATABASE_URL` (and `DIRECT_URL`) from your Neon `haven` project as environment variables.
-3. Deploy the development branch as a **preview** (do not merge to `main`).
-4. Run `npm run db:migrate && npm run db:seed` against the Neon database once.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FImomazin%2Fhaven&project-name=haven&repository-name=haven&env=DATABASE_URL,DIRECT_URL&envDescription=Neon%20pooled%20and%20direct%20connection%20strings%20for%20the%20haven%20project)
 
-Vercel serverless functions reach Neon over the pooled connection; all routes use the Node
-runtime. See [`docs/architecture.md`](docs/architecture.md).
+One click, then paste your Neon connection strings when prompted. Step by step:
+
+1. **Import** `Imomazin/haven` into Vercel (the button above, or Vercel dashboard →
+   Add New → Project → pick this repo). Project name `haven` (or `haven-civtech` if taken).
+   Set the **Production Branch** to `claude/haven-housing-risk-platform-fkryr1` (or deploy that
+   branch as a **preview**) — do **not** merge `main`.
+2. Add two environment variables from your Neon `haven` project:
+   - `DATABASE_URL` — the **pooled** connection string (host contains `-pooler`).
+   - `DIRECT_URL` — the **unpooled** string (same, without `-pooler`; used only by migrations).
+3. **Deploy.** The database is already migrated and seeded, so the app shows live data
+   immediately — no `db:migrate`/`db:seed` needed unless you recreate the database.
+
+`vercel.json` pins the Next.js framework, build and install commands. Vercel serverless
+functions reach Neon over the pooled connection; all routes use the Node runtime. See
+[`docs/architecture.md`](docs/architecture.md).
+
+> The one-click button uses Vercel's clone flow. Because you own the repo, you can equally use
+> **Import** in the Vercel dashboard to deploy this exact repository/branch. Keep credentials in
+> Vercel's env settings only — never commit them (this repo is public).
 
 ## Demo workflow
 
