@@ -17,6 +17,7 @@ import { assessRisk } from "@/lib/risk-engine";
 import type { RiskInput } from "@/lib/types";
 import { demo } from "./demo-store";
 import { hasDb } from "./view-types";
+import { computeOperational } from "@/lib/operational";
 export type { PortfolioStats, QueueRow, PropertyRecord } from "./view-types";
 
 // Map DB rows into the risk-engine input shape.
@@ -427,4 +428,13 @@ export async function getAnalytics() {
     .orderBy(desc(count()));
 
   return { byLocality, byType, byPrimary, interventionsByType, interventionOutcomes, riskReduction, repeatedIssues };
+}
+
+export async function getOperational() {
+  if (!hasDb()) return demo.getOperational();
+  const db = getDb();
+  const rows = await db
+    .select({ openedAt: cases.openedAt, closedAt: cases.closedAt, ownerTeam: cases.ownerTeam, status: cases.status })
+    .from(cases);
+  return computeOperational(rows);
 }

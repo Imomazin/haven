@@ -1,12 +1,13 @@
-import { getAnalytics, getPortfolioStats } from "@/db/queries";
+import { getAnalytics, getPortfolioStats, getOperational } from "@/db/queries";
 import { PageHeader, Card, SectionTitle, Table, EmptyState, StatTile } from "@/components/ui";
-import { StackedBandBar, SimpleBar, RiskReductionBar } from "@/components/charts";
+import { StackedBandBar, SimpleBar, RiskReductionBar, TrendLines } from "@/components/charts";
 import { label } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
-  const [a, stats] = await Promise.all([getAnalytics(), getPortfolioStats()]);
+  const [a, stats, ops] = await Promise.all([getAnalytics(), getPortfolioStats(), getOperational()]);
+  const workloadData = ops.workload.map((w) => ({ name: w.team, value: w.open }));
 
   const locMap = new Map<string, { name: string; Critical: number; High: number; Moderate: number; Low: number }>();
   for (const r of a.byLocality) {
@@ -34,6 +35,8 @@ export default async function AnalyticsPage() {
       </div>
 
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <Card><SectionTitle sub="Cases opened vs closed per month — throughput and resolution">Case throughput</SectionTitle><TrendLines data={ops.trend} /></Card>
+        <Card><SectionTitle sub="Open cases per owning team — where the load sits">Workload by team</SectionTitle><SimpleBar data={workloadData} horizontal color="#2c4063" height={220} /></Card>
         <Card><SectionTitle sub="Households by band, worst-affected areas first">Risk by geography</SectionTitle><StackedBandBar data={localityData} /></Card>
         <Card><SectionTitle sub="Average overall risk score (0–100)">Risk by property type</SectionTitle><SimpleBar data={typeData} horizontal color="#213250" /></Card>
         <Card><SectionTitle sub="Highest-weighted risk theme per household">Primary risk driver</SectionTitle><SimpleBar data={primaryData} horizontal color="#bb5a32" /></Card>

@@ -9,6 +9,7 @@ import { buildDataset, type Dataset, type PropertyRow, type HouseholdRow } from 
 import { assessRisk } from "@/lib/risk-engine";
 import { recommendInterventions } from "@/lib/intervention-engine";
 import { planNewCase } from "@/lib/case-planning";
+import { computeOperational } from "@/lib/operational";
 import type { RiskInput, RiskAssessment } from "@/lib/types";
 import type { PortfolioStats, QueueRow } from "./view-types";
 
@@ -263,6 +264,10 @@ export const demo = {
     const repeatedIssues = [...repeatAgg].filter(([, v]) => v.n >= 3).map(([ref, v]) => ({ ref, locality: v.locality, n: v.n })).sort((a, b) => b.n - a.n);
 
     return { byLocality, byType, byPrimary, interventionsByType, interventionOutcomes, riskReduction, repeatedIssues };
+  },
+
+  getOperational() {
+    return computeOperational(db().cases.map((c) => ({ openedAt: c.openedAt, closedAt: c.closedAt, ownerTeam: c.ownerTeam, status: c.status })));
   },
 
   // ---- Mutations ----

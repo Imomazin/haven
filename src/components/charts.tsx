@@ -6,6 +6,8 @@ import {
   CartesianGrid,
   Cell,
   Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -75,6 +77,22 @@ export function SimpleBar({
         <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
         <Bar dataKey={dataKey} fill={color} radius={[4, 4, 0, 0]} />
       </BarChart>
+    </ResponsiveContainer>
+  );
+}
+
+export function TrendLines({ data }: { data: { label: string; opened: number; closed: number }[] }) {
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <LineChart data={data} margin={{ left: 4, right: 12, top: 8, bottom: 4 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+        <XAxis dataKey="label" tick={AXIS} />
+        <YAxis allowDecimals={false} tick={AXIS} />
+        <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+        <Legend wrapperStyle={{ fontSize: 12 }} />
+        <Line type="monotone" dataKey="opened" name="Cases opened" stroke="#bf5a2c" strokeWidth={2.5} dot={{ r: 3 }} />
+        <Line type="monotone" dataKey="closed" name="Cases closed" stroke="#3f6b4e" strokeWidth={2.5} dot={{ r: 3 }} />
+      </LineChart>
     </ResponsiveContainer>
   );
 }
