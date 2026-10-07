@@ -23,6 +23,7 @@ export default function DemoPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="About"
         title="Guided demo (6–8 minutes)"
         description="A presenter script that walks a household from risk to intervention to measured risk reduction and back to the portfolio view."
         actions={<ResetButton />}
@@ -30,7 +31,7 @@ export default function DemoPage() {
 
       <Card className="mb-4">
         <SectionTitle>What not to claim</SectionTitle>
-        <ul className="list-inside list-disc space-y-1 text-sm text-navy-600">
+        <ul className="list-inside list-disc space-y-1 text-sm text-graphite-600">
           <li>Don&apos;t present risk scores as clinically validated or as medical assessments.</li>
           <li>Don&apos;t imply live integrations — the connectors shown are demo/simulated.</li>
           <li>Don&apos;t imply endorsement by Cloch Housing Association or CivTech.</li>
@@ -43,10 +44,10 @@ export default function DemoPage() {
         <ol className="space-y-3">
           {STEPS.map((s, i) => (
             <li key={i} className="flex gap-3">
-              <span aria-hidden className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-navy-700 text-xs font-bold text-white">{i + 1}</span>
+              <span aria-hidden className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ink-800 text-xs font-bold text-white">{i + 1}</span>
               <div>
-                <div className="text-sm font-medium text-navy-800">{s.do}</div>
-                <div className="text-sm text-navy-500">“{s.say}”</div>
+                <div className="text-sm font-medium text-ink-900">{s.do}</div>
+                <div className="text-sm text-graphite-500">“{s.say}”</div>
               </div>
             </li>
           ))}

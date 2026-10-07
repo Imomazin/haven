@@ -30,7 +30,7 @@ const PRESETS: Record<string, RiskInput> = {
 
 function Field({ label: lbl, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="flex flex-col gap-1 text-xs font-medium text-navy-600">
+    <label className="flex flex-col gap-1 text-xs font-medium text-graphite-600">
       {lbl}
       {children}
     </label>
@@ -57,7 +57,7 @@ export function Simulator() {
       <div className="space-y-4 lg:col-span-3">
         <Card>
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-navy-600">Start from:</span>
+            <span className="text-sm font-medium text-graphite-600">Start from:</span>
             {Object.keys(PRESETS).map((name) => (
               <button key={name} onClick={() => setInput(PRESETS[name])} className="btn-secondary py-1 text-xs">
                 {name}
@@ -93,9 +93,9 @@ export function Simulator() {
             <Field label="Support need"><select className="input" value={h.healthVulnerability} onChange={(e) => setH("healthVulnerability", e.target.value as typeof h.healthVulnerability)}>{RISK_LEVELS.map((v) => <Opt key={v} v={v} />)}</select></Field>
             <Field label={`Adults 65+: ${h.adultsOver65}`}><input type="range" min={0} max={3} value={h.adultsOver65} onChange={(e) => setH("adultsOver65", +e.target.value)} /></Field>
             <Field label={`Children under 5: ${h.childrenUnder5}`}><input type="range" min={0} max={3} value={h.childrenUnder5} onChange={(e) => setH("childrenUnder5", +e.target.value)} /></Field>
-            <label className="flex items-center gap-2 text-xs font-medium text-navy-600"><input type="checkbox" checked={h.mobilitySupport} onChange={(e) => setH("mobilitySupport", e.target.checked)} /> Mobility support</label>
-            <label className="flex items-center gap-2 text-xs font-medium text-navy-600"><input type="checkbox" checked={h.childrenPresent} onChange={(e) => setH("childrenPresent", e.target.checked)} /> Children present</label>
-            <label className="flex items-center gap-2 text-xs font-medium text-navy-600"><input type="checkbox" checked={h.recentHouseholdChange} onChange={(e) => setH("recentHouseholdChange", e.target.checked)} /> Recent change</label>
+            <label className="flex items-center gap-2 text-xs font-medium text-graphite-600"><input type="checkbox" checked={h.mobilitySupport} onChange={(e) => setH("mobilitySupport", e.target.checked)} /> Mobility support</label>
+            <label className="flex items-center gap-2 text-xs font-medium text-graphite-600"><input type="checkbox" checked={h.childrenPresent} onChange={(e) => setH("childrenPresent", e.target.checked)} /> Children present</label>
+            <label className="flex items-center gap-2 text-xs font-medium text-graphite-600"><input type="checkbox" checked={h.recentHouseholdChange} onChange={(e) => setH("recentHouseholdChange", e.target.checked)} /> Recent change</label>
           </div>
         </Card>
       </div>
@@ -109,8 +109,8 @@ export function Simulator() {
           <SectionTitle>Would recommend</SectionTitle>
           <ul className="space-y-2">
             {recs.map((r) => (
-              <li key={r.type} className="flex items-center justify-between gap-2 border-b border-navy-50 pb-1.5 text-sm">
-                <span className="font-medium text-navy-800">{r.label}</span>
+              <li key={r.type} className="flex items-center justify-between gap-2 border-b border-limestone-100 pb-1.5 text-sm">
+                <span className="font-medium text-ink-900">{r.label}</span>
                 <UrgencyBadge urgency={r.urgency} />
               </li>
             ))}

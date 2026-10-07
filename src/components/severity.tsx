@@ -62,34 +62,34 @@ export function RiskBadge({ band, score }: { band: string; score?: number }) {
 }
 
 const PILL_TONES: Record<string, string> = {
-  open: "bg-navy-50 text-navy-700 border-navy-200",
-  assigned: "bg-navy-50 text-navy-700 border-navy-200",
-  in_progress: "bg-teal-50 text-teal-800 border-teal-300",
-  monitoring: "bg-teal-50 text-teal-800 border-teal-300",
-  escalated: "bg-orange-50 text-orange-900 border-orange-300",
-  closed: "bg-navy-100 text-navy-600 border-navy-200",
-  recommended: "bg-navy-50 text-navy-700 border-navy-200",
-  scheduled: "bg-navy-50 text-navy-700 border-navy-200",
-  completed: "bg-teal-50 text-teal-800 border-teal-300",
-  cancelled: "bg-navy-100 text-navy-500 border-navy-200",
+  open: "bg-graphite-100 text-graphite-700 border-graphite-200",
+  assigned: "bg-ink-50 text-ink-700 border-ink-200",
+  in_progress: "bg-ink-50 text-ink-700 border-ink-200",
+  monitoring: "bg-sage-50 text-sage-700 border-sage-200",
+  escalated: "bg-risk-high-50 text-risk-high-700 border-risk-high-200",
+  closed: "bg-sage-50 text-sage-700 border-sage-200",
+  recommended: "bg-graphite-100 text-graphite-700 border-graphite-200",
+  scheduled: "bg-ink-50 text-ink-700 border-ink-200",
+  completed: "bg-sage-50 text-sage-700 border-sage-200",
+  cancelled: "bg-graphite-100 text-graphite-500 border-graphite-200",
 };
 
 export function StatusPill({ status }: { status: string }) {
-  const tone = PILL_TONES[status] ?? "bg-navy-50 text-navy-700 border-navy-200";
-  return <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${tone}`}>{label(status)}</span>;
+  const tone = PILL_TONES[status] ?? "bg-graphite-100 text-graphite-700 border-graphite-200";
+  return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${tone}`}><span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />{label(status)}</span>;
 }
 
 export function UrgencyBadge({ urgency }: { urgency: string }) {
   const tones: Record<string, string> = {
-    Immediate: "bg-red-50 text-red-900 border-red-300",
-    Soon: "bg-orange-50 text-orange-900 border-orange-300",
-    Scheduled: "bg-amber-50 text-amber-800 border-amber-300",
-    Routine: "bg-teal-50 text-teal-800 border-teal-300",
+    Immediate: "bg-risk-critical-50 text-risk-critical-700 border-risk-critical-200",
+    Soon: "bg-risk-high-50 text-risk-high-700 border-risk-high-200",
+    Scheduled: "bg-risk-moderate-50 text-risk-moderate-700 border-risk-moderate-200",
+    Routine: "bg-sage-50 text-sage-700 border-sage-200",
   };
   const marks: Record<string, string> = { Immediate: "●●●", Soon: "●●", Scheduled: "●", Routine: "○" };
   return (
     <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-medium ${tones[urgency] ?? tones.Routine}`}>
-      <span aria-hidden className="tracking-tighter">{marks[urgency] ?? "○"}</span>
+      <span aria-hidden className="text-[8px] leading-none tracking-tighter">{marks[urgency] ?? "○"}</span>
       {urgency}
     </span>
   );
@@ -97,16 +97,16 @@ export function UrgencyBadge({ urgency }: { urgency: string }) {
 
 export function ConfidenceBadge({ confidence }: { confidence: string }) {
   const tones: Record<string, string> = {
-    High: "text-teal-800 border-teal-300",
-    Moderate: "text-amber-800 border-amber-300",
-    Low: "text-navy-600 border-navy-300",
+    High: "text-sage-700 border-sage-200",
+    Moderate: "text-risk-moderate-700 border-risk-moderate-200",
+    Low: "text-graphite-600 border-graphite-300",
   };
   const bars = confidence === "High" ? 3 : confidence === "Moderate" ? 2 : 1;
   return (
     <span className={`inline-flex items-center gap-1 rounded border bg-white px-1.5 py-0.5 text-xs font-medium ${tones[confidence] ?? tones.Low}`} title={`Evidence confidence: ${confidence}`}>
       <span aria-hidden className="flex items-end gap-px">
         {[0, 1, 2].map((i) => (
-          <span key={i} className={`inline-block w-0.5 ${i < bars ? "bg-current" : "bg-navy-200"}`} style={{ height: `${(i + 1) * 3 + 2}px` }} />
+          <span key={i} className={`inline-block w-0.5 ${i < bars ? "bg-current" : "bg-graphite-200"}`} style={{ height: `${(i + 1) * 3 + 2}px` }} />
         ))}
       </span>
       {confidence} confidence
@@ -116,9 +116,9 @@ export function ConfidenceBadge({ confidence }: { confidence: string }) {
 
 export function ReviewBadge({ status }: { status: string }) {
   const map: Record<string, { text: string; cls: string }> = {
-    reviewed: { text: "Human-reviewed", cls: "text-teal-800 border-teal-300 bg-teal-50" },
-    unreviewed: { text: "Awaiting review", cls: "text-amber-800 border-amber-300 bg-amber-50" },
-    overridden: { text: "Manually overridden", cls: "text-navy-700 border-navy-300 bg-navy-50" },
+    reviewed: { text: "Human-reviewed", cls: "text-sage-700 border-sage-200 bg-sage-50" },
+    unreviewed: { text: "Awaiting review", cls: "text-risk-moderate-700 border-risk-moderate-200 bg-risk-moderate-50" },
+    overridden: { text: "Manually overridden", cls: "text-ink-700 border-ink-200 bg-ink-50" },
   };
   const m = map[status] ?? map.unreviewed;
   return <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-xs font-medium ${m.cls}`}>{m.text}</span>;

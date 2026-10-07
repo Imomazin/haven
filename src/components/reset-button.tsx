@@ -8,7 +8,7 @@ export function ResetButton() {
   const [done, setDone] = useState(false);
   const [pending, start] = useTransition();
 
-  if (done) return <span className="text-sm font-medium text-teal-700">Demo data restored to seed state.</span>;
+  if (done) return <span className="text-sm font-medium text-ink-700">Demo data restored to seed state.</span>;
 
   if (!confirming) {
     return (
@@ -20,7 +20,7 @@ export function ResetButton() {
 
   return (
     <span className="inline-flex items-center gap-2">
-      <span className="text-sm text-navy-600">This restores the deterministic seed and discards demo edits. Sure?</span>
+      <span className="text-sm text-graphite-600">This restores the deterministic seed and discards demo edits. Sure?</span>
       <button
         className="btn-primary"
         disabled={pending}

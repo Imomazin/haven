@@ -9,6 +9,7 @@ export default function MethodologyPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Assurance"
         title="Methodology"
         description={`How Haven scores risk. Transparent, rule-based, versioned (${RISK_MODEL_VERSION}). Not clinically validated.`}
         actions={<LinkButton href="/simulator" variant="teal">Try the risk simulator →</LinkButton>}
@@ -16,19 +17,19 @@ export default function MethodologyPage() {
 
       <Card className="mb-4">
         <SectionTitle>Overall score</SectionTitle>
-        <p className="text-sm text-navy-600">
+        <p className="text-sm text-graphite-600">
           Six risk dimensions are each scored 0–100 from explicit rules, then combined into a single overall score using fixed
           weights (below). The overall score maps to a band. Every value is reproducible and inspectable — there is no black box and
           no external AI call.
         </p>
         <Table>
           <thead><tr><th className="th">Dimension</th><th className="th">Weight</th><th className="th">What it captures</th></tr></thead>
-          <tbody className="divide-y divide-navy-50">
+          <tbody className="divide-y divide-limestone-100">
             {dims.map((d) => (
               <tr key={d}>
                 <td className="td font-medium">{DIMENSION_LABELS[d]}</td>
                 <td className="td tabular-nums">{DIMENSION_WEIGHTS[d]}</td>
-                <td className="td text-sm text-navy-600">{DESCRIPTIONS[d]}</td>
+                <td className="td text-sm text-graphite-600">{DESCRIPTIONS[d]}</td>
               </tr>
             ))}
           </tbody>
@@ -40,7 +41,7 @@ export default function MethodologyPage() {
           <SectionTitle>Risk bands</SectionTitle>
           <ul className="space-y-1 text-sm">
             {BAND_THRESHOLDS.map((b) => (
-              <li key={b.band} className="flex justify-between border-b border-navy-50 pb-1"><span>{b.band}</span><span className="tabular-nums text-navy-500">≥ {b.min}</span></li>
+              <li key={b.band} className="flex justify-between border-b border-limestone-100 pb-1"><span>{b.band}</span><span className="tabular-nums text-graphite-500">≥ {b.min}</span></li>
             ))}
           </ul>
         </Card>
@@ -48,25 +49,25 @@ export default function MethodologyPage() {
           <SectionTitle>Urgency → response window</SectionTitle>
           <ul className="space-y-1 text-sm">
             {URGENCY_THRESHOLDS.map((u) => (
-              <li key={u.category} className="flex justify-between border-b border-navy-50 pb-1"><span>{u.category} (≥{u.min})</span><span className="tabular-nums text-navy-500">{u.responseDueDays}d</span></li>
+              <li key={u.category} className="flex justify-between border-b border-limestone-100 pb-1"><span>{u.category} (≥{u.min})</span><span className="tabular-nums text-graphite-500">{u.responseDueDays}d</span></li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-navy-500">Urgency is escalated for acute combinations (e.g. cold home with a vulnerable occupant). Windows are prototype response rules, not statutory deadlines.</p>
+          <p className="mt-2 text-xs text-graphite-500">Urgency is escalated for acute combinations (e.g. cold home with a vulnerable occupant). Windows are prototype response rules, not statutory deadlines.</p>
         </Card>
         <Card>
           <SectionTitle>Confidence</SectionTitle>
           <ul className="space-y-1 text-sm">
             {CONFIDENCE_THRESHOLDS.map((c) => (
-              <li key={c.category} className="flex justify-between border-b border-navy-50 pb-1"><span>{c.category}</span><span className="tabular-nums text-navy-500">≥ {c.min}</span></li>
+              <li key={c.category} className="flex justify-between border-b border-limestone-100 pb-1"><span>{c.category}</span><span className="tabular-nums text-graphite-500">≥ {c.min}</span></li>
             ))}
           </ul>
-          <p className="mt-2 text-xs text-navy-500">Confidence starts at 100 and is reduced for missing or stale evidence (e.g. no sensor readings, old data).</p>
+          <p className="mt-2 text-xs text-graphite-500">Confidence starts at 100 and is reduced for missing or stale evidence (e.g. no sensor readings, old data).</p>
         </Card>
       </div>
 
       <Card className="mt-4">
         <SectionTitle>Limitations &amp; safety</SectionTitle>
-        <ul className="list-inside list-disc space-y-1 text-sm text-navy-600">
+        <ul className="list-inside list-disc space-y-1 text-sm text-graphite-600">
           <li>Weights and thresholds are illustrative starting points, calibrated for a demonstrator — not validated against outcomes.</li>
           <li>Haven does not diagnose medical conditions and is not a clinical decision system.</li>
           <li>Scores are decision-support: a trained human reviews and decides. The system records who reviewed each assessment.</li>

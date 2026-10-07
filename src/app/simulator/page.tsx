@@ -9,6 +9,7 @@ export default function SimulatorPage() {
     <div>
       <Breadcrumbs items={[{ label: "Methodology", href: "/methodology" }, { label: "Risk simulator" }]} />
       <PageHeader
+        eyebrow="Assurance"
         title="Risk simulator"
         description="Move any signal and watch the risk score, bands, drivers, confidence and recommended interventions recompute instantly — using the exact same transparent engine the platform runs. A fast way to understand and challenge the scoring."
       />

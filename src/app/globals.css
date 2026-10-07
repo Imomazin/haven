@@ -3,91 +3,78 @@
 @tailwind utilities;
 
 :root {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --bg: #f6f5f1;
-  --surface: #ffffff;
-  --text: #132038;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: ui-serif, Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+  --page: #faf8f3;
+  --text: #2d2f2b;
 }
 
-html {
-  scroll-behavior: smooth;
-}
+html { scroll-behavior: smooth; }
 
 body {
-  background:
-    radial-gradient(900px 400px at 100% -5%, rgba(47, 130, 123, 0.06), transparent),
-    var(--bg);
+  background: var(--page);
   color: var(--text);
   font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "ss01";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3 { letter-spacing: -0.01em; }
+.font-display { font-family: var(--font-display); letter-spacing: -0.012em; }
+h1, h2, h3 { letter-spacing: -0.012em; }
 
-/* Visible focus for keyboard users (WCAG 2.4.7). */
-a:focus-visible,
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-[tabindex]:focus-visible {
-  outline: 3px solid #2f827b;
+/* Keyboard focus (WCAG 2.4.7) */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, [tabindex]:focus-visible, summary:focus-visible {
+  outline: 2px solid #2c4063;
   outline-offset: 2px;
   border-radius: 6px;
 }
 
-.skip-link {
-  position: absolute;
-  left: -999px;
-  top: 0;
-  background: #132038;
-  color: #fff;
-  padding: 0.5rem 1rem;
-  z-index: 100;
-}
+.skip-link { position: absolute; left: -999px; top: 0; background: #101d33; color: #fff; padding: .5rem 1rem; z-index: 100; }
 .skip-link:focus { left: 0; }
 
-input[type="range"] { accent-color: #2f827b; width: 100%; }
-input[type="checkbox"] { accent-color: #2f827b; width: 1rem; height: 1rem; }
+input[type="range"] { accent-color: #bb5a32; width: 100%; }
+input[type="checkbox"] { accent-color: #2c4063; width: 1rem; height: 1rem; }
 
 @layer components {
-  .card {
-    @apply bg-white rounded-xl border border-navy-100;
-    box-shadow: 0 1px 2px rgba(19, 32, 56, 0.04), 0 4px 16px rgba(19, 32, 56, 0.04);
-  }
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-  }
-  .btn-primary { @apply btn bg-navy-700 text-white hover:bg-navy-800 shadow-sm; }
-  .btn-secondary { @apply btn bg-white text-navy-700 border border-navy-200 hover:bg-navy-50; }
-  .btn-teal { @apply btn bg-teal-600 text-white hover:bg-teal-700 shadow-sm; }
-  .input {
-    @apply rounded-lg border border-navy-200 bg-white px-3 py-2 text-sm text-navy-900 transition-colors focus:border-teal-500;
-  }
-  .th {
-    @apply bg-navy-50/70 px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-navy-500;
-  }
-  .td { @apply px-3 py-2.5 text-sm text-navy-800 align-top; }
-  /* Zebra + hover on data tables */
-  tbody.zebra tr:nth-child(even) { background: rgba(19, 32, 56, 0.015); }
-  .hero {
-    @apply rounded-2xl border border-navy-100 p-6 text-white;
-    background: linear-gradient(135deg, #132038 0%, #1b2d4b 55%, #20544f 140%);
-  }
-  .chip {
-    @apply inline-flex items-center gap-1 rounded-full border border-navy-100 bg-white px-2 py-0.5 text-xs font-medium text-navy-600;
-  }
+  /* Surfaces */
+  .panel { @apply bg-white rounded-lg border border-graphite-200/70 shadow-subtle; }
+  .card { @apply bg-white rounded-lg border border-graphite-200/70 shadow-subtle; } /* legacy alias */
+
+  /* Buttons */
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed; }
+  .btn-primary { @apply btn bg-ink-800 text-white hover:bg-ink-900; }
+  .btn-accent { @apply btn bg-terracotta-600 text-white hover:bg-terracotta-700; }
+  .btn-secondary { @apply btn bg-white text-ink-800 border border-graphite-300 hover:bg-limestone-100; }
+  .btn-ghost { @apply btn text-ink-700 hover:bg-limestone-100; }
+
+  /* Forms */
+  .input { @apply rounded-md border border-graphite-300 bg-white px-3 py-2 text-sm text-graphite-900 transition-colors hover:border-graphite-400 focus:border-ink-500; }
+  .field-label { @apply text-[11px] font-semibold uppercase tracking-wider text-graphite-500; }
+
+  /* Tables */
+  .th { @apply bg-limestone-100 px-3 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wider text-graphite-500 border-b border-graphite-200; }
+  .td { @apply px-3 py-3 text-sm text-graphite-800 align-middle; }
+
+  /* Eyebrow / section label */
+  .eyebrow { @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-terracotta-600; }
+
+  /* Severity left rail (paired with text + icon elsewhere, never colour alone) */
+  .rail { @apply border-l-[3px]; }
 }
 
-/* Skeleton shimmer for loading states */
+/* Loading shimmer */
 .skeleton {
-  background: linear-gradient(90deg, rgba(19,32,56,0.06) 25%, rgba(19,32,56,0.11) 37%, rgba(19,32,56,0.06) 63%);
+  background: linear-gradient(90deg, rgba(16,29,51,.06) 25%, rgba(16,29,51,.1) 37%, rgba(16,29,51,.06) 63%);
   background-size: 400% 100%;
   animation: shimmer 1.3s ease-in-out infinite;
   border-radius: 8px;
 }
 @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+/* Thin scrollbars inside scroll regions */
+.scroll-y { scrollbar-width: thin; scrollbar-color: #c7b79b transparent; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }

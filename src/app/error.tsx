@@ -12,9 +12,9 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
 
   return (
     <div className="mx-auto max-w-lg py-16 text-center">
-      <p className="text-sm font-semibold uppercase tracking-wider text-orange-700">Something went wrong</p>
-      <h1 className="mt-2 text-2xl font-bold text-navy-900">This page couldn&apos;t load</h1>
-      <p className="mt-2 text-sm text-navy-600">
+      <p className="text-sm font-semibold uppercase tracking-wider text-risk-high-700">Something went wrong</p>
+      <h1 className="mt-2 text-2xl font-bold text-ink-900">This page couldn&apos;t load</h1>
+      <p className="mt-2 text-sm text-graphite-600">
         {isDbConfig
           ? "The database connection is not configured. Set DATABASE_URL (see .env.example) and seed the database."
           : "An unexpected error occurred while rendering this page."}
