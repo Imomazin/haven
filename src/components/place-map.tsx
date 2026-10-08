@@ -9,6 +9,11 @@ export function PlaceMap({ places }: { places: PlaceAggregate[] }) {
   const maxHh = Math.max(1, ...places.map((p) => p.households));
   const r = (hh: number) => 2.4 + (hh / maxHh) * 4.2;
 
+  // LOCALITY_GEO uses normalised 0–100 coordinates while this deliberately wide
+  // map uses a 100×62 viewBox. Scale Y into the rendered coordinate system so
+  // southern localities remain visible instead of falling below the SVG bounds.
+  const mapY = (y: number) => y * 0.62;
+
   return (
     <figure className="m-0">
       <div className="overflow-hidden rounded-lg border border-graphite-200/70 bg-[#eef2f1]">
@@ -24,15 +29,16 @@ export function PlaceMap({ places }: { places: PlaceAggregate[] }) {
           {places.map((p) => {
             const c = BAND_HEX[p.topBand];
             const rad = r(p.households);
+            const cy = mapY(p.point.y);
             return (
               <a key={p.locality} href={`/risk-queue?locality=${encodeURIComponent(p.locality)}`}>
                 <title>{`${p.locality} — ${p.households} households, ${p.highCritical} high/critical, ${p.openCases} open cases`}</title>
-                <circle cx={p.point.x} cy={p.point.y} r={rad + 2.2} fill={c} opacity={0.14} />
-                <circle cx={p.point.x} cy={p.point.y} r={rad} fill={c} opacity={0.9} stroke="#fff" strokeWidth="0.5" />
+                <circle cx={p.point.x} cy={cy} r={rad + 2.2} fill={c} opacity={0.14} />
+                <circle cx={p.point.x} cy={cy} r={rad} fill={c} opacity={0.9} stroke="#fff" strokeWidth="0.5" />
                 {p.highCritical > 0 && (
-                  <text x={p.point.x} y={p.point.y + 1.1} textAnchor="middle" fontSize={rad * 0.9} fontWeight="700" fill="#fff">{p.highCritical}</text>
+                  <text x={p.point.x} y={cy + 1.1} textAnchor="middle" fontSize={rad * 0.9} fontWeight="700" fill="#fff">{p.highCritical}</text>
                 )}
-                <text x={p.point.x} y={p.point.y + rad + 3.1} textAnchor="middle" fontSize="2.5" fontWeight="600" fill="#213250">{p.locality}</text>
+                <text x={p.point.x} y={Math.min(59, cy + rad + 3.1)} textAnchor="middle" fontSize="2.5" fontWeight="600" fill="#213250">{p.locality}</text>
               </a>
             );
           })}
