@@ -18,6 +18,7 @@ import type { RiskInput } from "@/lib/types";
 import { demo } from "./demo-store";
 import { hasDb } from "./view-types";
 import { computeOperational } from "@/lib/operational";
+import { computePlaces } from "@/lib/places";
 export type { PortfolioStats, QueueRow, PropertyRecord } from "./view-types";
 
 // Map DB rows into the risk-engine input shape.
@@ -437,4 +438,20 @@ export async function getOperational() {
     .select({ openedAt: cases.openedAt, closedAt: cases.closedAt, ownerTeam: cases.ownerTeam, status: cases.status })
     .from(cases);
   return computeOperational(rows);
+}
+
+export async function getPlaces() {
+  if (!hasDb()) return demo.getPlaces();
+  const db = getDb();
+  const openCaseHouseholds = await db
+    .select({ householdId: cases.householdId })
+    .from(cases)
+    .where(sql`${cases.status} <> 'closed'`);
+  const openSet = new Set(openCaseHouseholds.map((r) => r.householdId));
+  const rows = await db
+    .select({ locality: properties.locality, band: riskAssessments.band, primaryRisk: riskAssessments.primaryRisk, householdId: riskAssessments.householdId })
+    .from(riskAssessments)
+    .innerJoin(properties, eq(riskAssessments.propertyId, properties.id))
+    .where(eq(riskAssessments.isCurrent, true));
+  return computePlaces(rows.map((r) => ({ locality: r.locality, band: r.band, primaryRisk: r.primaryRisk, hasOpenCase: openSet.has(r.householdId) })));
 }

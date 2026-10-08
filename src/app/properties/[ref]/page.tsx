@@ -93,6 +93,11 @@ export default async function PropertyDetail({ params }: { params: Promise<{ ref
           ) : (
             <p className="text-sm text-graphite-400">No cases opened.</p>
           )}
+          <div className="mt-4 border-t border-graphite-100 pt-3 text-sm">
+            <p className="field-label">Neighbourhood</p>
+            <p className="mt-1 text-graphite-600">Part of <span className="font-medium text-ink-900">{p.locality}</span>.</p>
+            <Link href={`/risk-queue?locality=${encodeURIComponent(p.locality)}`} className="mt-1 inline-block text-ink-700 underline">See local risk →</Link>
+          </div>
         </Card>
       </div>
     </div>

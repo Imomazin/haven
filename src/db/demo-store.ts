@@ -10,6 +10,7 @@ import { assessRisk } from "@/lib/risk-engine";
 import { recommendInterventions } from "@/lib/intervention-engine";
 import { planNewCase } from "@/lib/case-planning";
 import { computeOperational } from "@/lib/operational";
+import { computePlaces } from "@/lib/places";
 import type { RiskInput, RiskAssessment } from "@/lib/types";
 import type { PortfolioStats, QueueRow } from "./view-types";
 
@@ -268,6 +269,17 @@ export const demo = {
 
   getOperational() {
     return computeOperational(db().cases.map((c) => ({ openedAt: c.openedAt, closedAt: c.closedAt, ownerTeam: c.ownerTeam, status: c.status })));
+  },
+
+  getPlaces() {
+    const d = db();
+    const openByHousehold = new Set(d.cases.filter((c) => c.status !== "closed").map((c) => c.householdId));
+    return computePlaces(
+      d.assessments.map((a) => {
+        const p = d.properties.find((x) => x.id === a.propertyId)!;
+        return { locality: p.locality, band: a.band, primaryRisk: a.primaryRisk, hasOpenCase: openByHousehold.has(a.householdId) };
+      }),
+    );
   },
 
   // ---- Mutations ----

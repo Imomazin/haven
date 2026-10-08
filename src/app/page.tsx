@@ -1,170 +1,147 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { getPortfolioStats, getRiskQueue, getRecentAudit } from "@/db/queries";
+import { getPortfolioStats, getRiskQueue, getRecentAudit, getPlaces, getInterventionsList } from "@/db/queries";
 import { getRole, ROLE_COOKIE, roleLinks } from "@/lib/roles";
-import { StatTile, Card, SectionTitle, SegmentBar, LinkButton } from "@/components/ui";
-import { RiskBadge, UrgencyBadge } from "@/components/severity";
+import { agencyForType } from "@/lib/places";
+import { Card, SectionTitle, SegmentBar } from "@/components/ui";
+import { PlaceMap } from "@/components/place-map";
+import { RiskBadge, UrgencyBadge, StatusPill } from "@/components/severity";
 import { label, formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
-export default async function OverviewPage() {
-  const [stats, queue, audit, jar] = await Promise.all([getPortfolioStats(), getRiskQueue({}), getRecentAudit(7), cookies()]);
+const DOT: Record<string, string> = { Critical: "bg-risk-critical-500", High: "bg-risk-high-500", Moderate: "bg-risk-moderate-500", Low: "bg-risk-low-500" };
+
+export default async function PortfolioPage() {
+  const [stats, queue, audit, places, activeInts, jar] = await Promise.all([
+    getPortfolioStats(), getRiskQueue({}), getRecentAudit(6), getPlaces(), getInterventionsList({ status: "in_progress" }), cookies(),
+  ]);
   const role = getRole(jar.get(ROLE_COOKIE)?.value);
   const links = roleLinks(role);
-
-  const urgent = queue.filter((r) => r.urgency === "Immediate").length;
-  const priority = queue.slice(0, 6);
-
-  // Geographic concentration: High+Critical households per locality.
-  const geo = new Map<string, number>();
-  for (const r of queue) if (r.band === "High" || r.band === "Critical") geo.set(r.locality, (geo.get(r.locality) ?? 0) + 1);
-  const geoTop = [...geo.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6);
-  const geoMax = Math.max(1, ...geoTop.map(([, n]) => n));
-
   const bc = stats.bandCounts;
-  const totalBands = bc.Critical + bc.High + bc.Moderate + bc.Low || 1;
+  const urgent = queue.filter((r) => r.urgency === "Immediate").length;
+  const priority = queue.slice(0, 7);
+  const top = queue[0];
 
   return (
-    <div>
-      <div className="mb-6 flex flex-col gap-3 border-b border-graphite-200/70 pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="eyebrow mb-1.5">Operational overview</p>
-          <h1 className="font-display text-[26px] font-semibold leading-tight text-ink-900">
-            The housing risk landscape, at a glance
-          </h1>
-          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-graphite-600">
-            Who needs attention now, why, and what should happen next — across {stats.propertiesMonitored} properties and {stats.householdsRepresented} households.
-          </p>
+    <div className="space-y-6">
+      {/* Situation band */}
+      <section className="overflow-hidden rounded-xl bg-ink-900 text-white">
+        <div className="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr] lg:p-8">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-terracotta-300">Portfolio · Inverclyde</p>
+            <h1 className="mt-2 font-display text-[28px] font-semibold leading-tight">Housing situation room</h1>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-100">
+              {stats.householdsRepresented} households across {places.length} neighbourhoods. {bc.Critical} critical and {bc.High} high‑risk
+              need attention now; {stats.overdueActions} action{stats.overdueActions === 1 ? "" : "s"} overdue.
+            </p>
+            {top && (
+              <div className="mt-4 inline-flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-200">Current priority</span>
+                <Link href={top.caseRef ? `/cases/${top.caseRef}` : `/households/${top.householdRef}`} className="text-sm font-medium text-white hover:underline">
+                  {top.propertyRef} · {top.locality}
+                </Link>
+                <RiskBadge band={top.band} score={top.overallScore} />
+                <UrgencyBadge urgency={top.urgency} />
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3 self-start">
+            {[["Urgent", urgent, "needs action now"], ["Open cases", stats.casesOpen, `${stats.openInterventions} interventions`], ["Overdue", stats.overdueActions, "past response window"], ["Improving", stats.casesImproving, "risk reduced"]].map(([k, v, h]) => (
+              <div key={k as string} className="rounded-lg border border-white/10 bg-white/5 p-3">
+                <div className="text-[11px] uppercase tracking-wider text-ink-200">{k}</div>
+                <div className="mt-1 font-display text-2xl font-semibold tabular-nums">{v as number}</div>
+                <div className="text-[11px] text-ink-300">{h}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <LinkButton href="/risk-queue" variant="primary">Open risk queue</LinkButton>
-          <LinkButton href="/demo">Guided demo</LinkButton>
+        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 bg-ink-950/40 px-6 py-2.5 lg:px-8">
+          <span className="text-[11px] text-ink-300">For {role.label}:</span>
+          {links.map((l) => (
+            <Link key={l.href} href={l.href} className="rounded border border-white/15 px-2 py-0.5 text-xs text-ink-100 hover:bg-white/10">{l.label}</Link>
+          ))}
         </div>
+      </section>
+
+      {/* Place + concentration */}
+      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+        <Card>
+          <SectionTitle sub="Risk by neighbourhood — select an area to triage" action={<Link href="/place" className="text-xs font-medium text-ink-700 hover:underline">All neighbourhoods →</Link>}>Where risk concentrates</SectionTitle>
+          <PlaceMap places={places} />
+        </Card>
+        <Card>
+          <SectionTitle sub="Worst-affected first">Neighbourhood priority</SectionTitle>
+          <ul className="divide-y divide-graphite-100">
+            {places.slice(0, 7).map((p) => (
+              <li key={p.locality} className="flex items-center gap-3 py-2">
+                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOT[p.topBand]}`} aria-hidden />
+                <Link href={`/risk-queue?locality=${encodeURIComponent(p.locality)}`} className="min-w-0 flex-1 truncate text-sm font-medium text-ink-900 hover:underline">{p.locality}</Link>
+                <span className="text-xs text-graphite-500">{label(p.dominantRisk)}</span>
+                <span className="w-16 text-right text-xs tabular-nums text-graphite-600">{p.highCritical} H/C · {p.openCases} open</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
       </div>
 
-      {/* Headline metrics — four, not twelve */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="Households monitored" value={stats.householdsRepresented} hint={`${stats.propertiesMonitored} properties`} tone="ink" />
-        <StatTile label="Requiring urgent attention" value={urgent} hint="Immediate response window" tone={urgent > 0 ? "critical" : "low"} />
-        <StatTile label="Open cases" value={stats.casesOpen} hint={`${stats.openInterventions} live interventions`} tone="ink" />
-        <StatTile label="Overdue actions" value={stats.overdueActions} hint="Past prototype response window" tone={stats.overdueActions > 0 ? "high" : "low"} />
-      </div>
-
-      {/* Role-tailored quick actions */}
-      <div className="mt-4 flex flex-wrap items-center gap-2 rounded-lg border border-graphite-200/70 bg-white px-4 py-3 shadow-subtle">
-        <span className="text-xs font-medium text-graphite-500">For {role.label}:</span>
-        {links.map((l) => (
-          <Link key={l.href} href={l.href} className="rounded-md border border-graphite-300 px-2.5 py-1 text-xs font-medium text-ink-800 hover:bg-limestone-100">
-            {l.label}
-          </Link>
-        ))}
-      </div>
-
-      <div className="mt-6 grid gap-5 lg:grid-cols-3">
-        {/* Priority list — the main column */}
-        <Card className="lg:col-span-2">
-          <SectionTitle sub="Highest urgency across the portfolio" action={<Link href="/risk-queue" className="text-xs font-medium text-ink-700 hover:underline">View queue →</Link>}>
-            Needs attention now
-          </SectionTitle>
+      {/* Priority households + active programme */}
+      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+        <Card>
+          <SectionTitle sub="Highest urgency across the portfolio" action={<Link href="/risk-queue" className="text-xs font-medium text-ink-700 hover:underline">Open queue →</Link>}>Households needing intervention</SectionTitle>
           <ul className="divide-y divide-graphite-100">
             {priority.map((r) => (
               <li key={r.householdRef} className="flex items-center gap-3 py-2.5">
                 <RiskBadge band={r.band} score={r.overallScore} />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-ink-900">
-                    <Link href={`/properties/${r.propertyRef}`} className="hover:underline">{r.propertyRef}</Link>
-                    <span className="font-normal text-graphite-500"> · {r.locality}</span>
-                  </div>
-                  <div className="truncate text-xs text-graphite-500">{label(r.primaryRisk)}{r.secondaryRisk ? ` · ${label(r.secondaryRisk)}` : ""} · {r.ownerName ?? "unassigned"}</div>
+                  <div className="truncate text-sm font-medium text-ink-900"><Link href={`/properties/${r.propertyRef}`} className="hover:underline">{r.propertyRef}</Link> <span className="font-normal text-graphite-500">· {r.locality}</span></div>
+                  <div className="truncate text-xs text-graphite-500">{label(r.primaryRisk)} · {r.ownerName ?? "unassigned"}</div>
                 </div>
                 <UrgencyBadge urgency={r.urgency} />
-                {r.caseRef ? (
-                  <Link href={`/cases/${r.caseRef}`} className="hidden text-xs font-medium text-ink-700 hover:underline sm:inline">{r.caseRef}</Link>
-                ) : (
-                  <span className="hidden text-xs text-graphite-400 sm:inline">no case</span>
-                )}
+                {r.caseRef && <Link href={`/cases/${r.caseRef}`} className="hidden text-xs font-medium text-ink-700 hover:underline sm:inline">{r.caseRef}</Link>}
               </li>
             ))}
           </ul>
         </Card>
-
-        {/* Risk landscape */}
-        <Card>
-          <SectionTitle sub="Current band distribution">Risk landscape</SectionTitle>
-          <SegmentBar
-            segments={[
-              { label: "Critical", value: bc.Critical, className: "bg-risk-critical-500" },
-              { label: "High", value: bc.High, className: "bg-risk-high-500" },
-              { label: "Moderate", value: bc.Moderate, className: "bg-risk-moderate-500" },
-              { label: "Low", value: bc.Low, className: "bg-risk-low-500" },
-            ]}
-          />
-          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm">
-            {([["Critical", bc.Critical, "bg-risk-critical-500"], ["High", bc.High, "bg-risk-high-500"], ["Moderate", bc.Moderate, "bg-risk-moderate-500"], ["Low", bc.Low, "bg-risk-low-500"]] as const).map(([k, v, dot]) => (
-              <div key={k} className="flex items-center justify-between">
-                <dt className="flex items-center gap-2 text-graphite-600"><span className={`h-2 w-2 rounded-full ${dot}`} aria-hidden />{k}</dt>
-                <dd className="tabular-nums font-medium text-ink-900">{v} <span className="text-xs text-graphite-400">· {Math.round((v / totalBands) * 100)}%</span></dd>
-              </div>
-            ))}
-          </dl>
-          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-graphite-100 pt-3 text-sm">
-            <div><div className="text-xs text-graphite-500">Improving</div><div className="font-semibold text-risk-low-700">{stats.casesImproving} cases</div></div>
-            <div><div className="text-xs text-graphite-500">Worsening</div><div className={`font-semibold ${stats.casesWorsening > 0 ? "text-risk-high-700" : "text-graphite-500"}`}>{stats.casesWorsening} cases</div></div>
-            <div><div className="text-xs text-graphite-500">Safeguarding indicators</div><div className="font-semibold text-ink-900">{stats.vulnerabilityCount}</div></div>
-            <div><div className="text-xs text-graphite-500">Avg resolution</div><div className="font-semibold text-ink-900">{stats.avgResolutionDays ?? "—"}d</div></div>
-          </div>
-        </Card>
+        <div className="space-y-5">
+          <Card>
+            <SectionTitle sub="Risk band distribution">Risk movement</SectionTitle>
+            <SegmentBar segments={[{ label: "Critical", value: bc.Critical, className: "bg-risk-critical-500" }, { label: "High", value: bc.High, className: "bg-risk-high-500" }, { label: "Moderate", value: bc.Moderate, className: "bg-risk-moderate-500" }, { label: "Low", value: bc.Low, className: "bg-risk-low-500" }]} />
+            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+              <div><div className="text-xs text-graphite-500">Improving</div><div className="font-semibold text-risk-low-700">{stats.casesImproving}</div></div>
+              <div><div className="text-xs text-graphite-500">Worsening</div><div className={`font-semibold ${stats.casesWorsening > 0 ? "text-risk-high-700" : "text-graphite-500"}`}>{stats.casesWorsening}</div></div>
+              <div><div className="text-xs text-graphite-500">Safeguarding</div><div className="font-semibold text-ink-900">{stats.vulnerabilityCount}</div></div>
+              <div><div className="text-xs text-graphite-500">Avg resolution</div><div className="font-semibold text-ink-900">{stats.avgResolutionDays ?? "—"}d</div></div>
+            </div>
+          </Card>
+          <Card>
+            <SectionTitle sub="In delivery now" action={<Link href="/interventions?status=in_progress" className="text-xs font-medium text-ink-700 hover:underline">All →</Link>}>Active programme</SectionTitle>
+            {activeInts.length ? (
+              <ul className="space-y-2 text-sm">
+                {activeInts.slice(0, 5).map(({ i, caseRef }) => (
+                  <li key={i.id} className="flex items-center justify-between gap-2 border-b border-graphite-100 pb-1.5 last:border-0">
+                    <div className="min-w-0"><Link href={`/cases/${caseRef}`} className="font-medium text-ink-900 hover:underline">{i.label}</Link><div className="truncate text-xs text-graphite-500">{agencyForType(i.type)}</div></div>
+                    <StatusPill status={i.status} />
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="text-sm text-graphite-400">No interventions in delivery.</p>}
+          </Card>
+        </div>
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-3">
-        {/* Geographic concentration */}
-        <Card>
-          <SectionTitle sub="High & critical households by area">Geographic concentration</SectionTitle>
-          <ul className="space-y-2.5">
-            {geoTop.map(([loc, n]) => (
-              <li key={loc}>
-                <div className="mb-1 flex items-center justify-between text-sm">
-                  <span className="text-ink-900">{loc}</span>
-                  <span className="tabular-nums text-graphite-500">{n}</span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-graphite-100">
-                  <div className="h-full rounded-full bg-ink-700" style={{ width: `${(n / geoMax) * 100}%` }} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        {/* Risk themes */}
-        <Card>
-          <SectionTitle sub="Households flagged per theme">Risk themes</SectionTitle>
-          <ul className="space-y-2 text-sm">
-            {([["Fuel poverty", stats.fuelPovertyCount], ["Cold home", stats.coldHomeCount], ["Damp", stats.dampRiskCount], ["Mould", stats.mouldRiskCount], ["Building fabric", stats.fabricRiskCount]] as const).map(([name, v]) => (
-              <li key={name} className="flex items-center justify-between border-b border-graphite-100 pb-1.5 last:border-0">
-                <span className="text-graphite-700">{name}</span>
-                <span className="tabular-nums font-medium text-ink-900">{v}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        {/* Recent activity */}
-        <Card>
-          <SectionTitle sub="Across all cases" action={<Link href="/governance" className="text-xs font-medium text-ink-700 hover:underline">Audit →</Link>}>Recent activity</SectionTitle>
-          <ul className="space-y-2.5">
-            {audit.map((e) => (
-              <li key={e.id} className="flex gap-2.5 text-sm">
-                <span aria-hidden className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-terracotta-500" />
-                <div className="min-w-0">
-                  <div className="text-ink-900">{label(e.action)} <span className="text-graphite-400">· {e.entityRef}</span></div>
-                  <div className="truncate text-xs text-graphite-500">{formatDate(e.createdAt)} · {e.actor}</div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </div>
+      {/* Recent activity */}
+      <Card>
+        <SectionTitle sub="Across all cases" action={<Link href="/governance" className="text-xs font-medium text-ink-700 hover:underline">Audit trail →</Link>}>Recent case activity</SectionTitle>
+        <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+          {audit.map((e) => (
+            <li key={e.id} className="flex gap-2.5 text-sm">
+              <span aria-hidden className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-terracotta-500" />
+              <div className="min-w-0"><div className="truncate text-ink-900">{label(e.action)} <span className="text-graphite-400">· {e.entityRef}</span></div><div className="text-xs text-graphite-500">{formatDate(e.createdAt)} · {e.actor}</div></div>
+            </li>
+          ))}
+        </ul>
+      </Card>
     </div>
   );
 }

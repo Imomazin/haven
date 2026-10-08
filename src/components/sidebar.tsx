@@ -9,35 +9,41 @@ import { RoleSwitcher } from "./role-switcher";
 type Item = { href: string; label: string; icon: IconName };
 const GROUPS: { heading: string; items: Item[] }[] = [
   {
-    heading: "Operate",
+    heading: "Portfolio",
     items: [
-      { href: "/", label: "Overview", icon: "overview" },
+      { href: "/", label: "Situation room", icon: "overview" },
+      { href: "/place", label: "Neighbourhoods", icon: "place" },
       { href: "/risk-queue", label: "Risk Queue", icon: "queue" },
+    ],
+  },
+  {
+    heading: "Records",
+    items: [
+      { href: "/households", label: "Households", icon: "household" },
+      { href: "/properties", label: "Properties", icon: "property" },
+    ],
+  },
+  {
+    heading: "Delivery",
+    items: [
       { href: "/cases", label: "Cases", icon: "case" },
       { href: "/interventions", label: "Interventions", icon: "intervention" },
     ],
   },
   {
-    heading: "Portfolio",
+    heading: "Intelligence",
     items: [
-      { href: "/properties", label: "Properties", icon: "property" },
-      { href: "/households", label: "Households", icon: "household" },
-      { href: "/analytics", label: "Analytics", icon: "analytics" },
+      { href: "/analytics", label: "Insights", icon: "analytics" },
+      { href: "/governance", label: "Governance", icon: "governance" },
     ],
   },
   {
-    heading: "Assurance",
+    heading: "Reference",
     items: [
-      { href: "/governance", label: "Governance", icon: "governance" },
       { href: "/methodology", label: "Methodology", icon: "methodology" },
       { href: "/simulator", label: "Risk Simulator", icon: "simulator" },
-    ],
-  },
-  {
-    heading: "About",
-    items: [
       { href: "/demo", label: "Guided Demo", icon: "demo" },
-      { href: "/about", label: "About Haven", icon: "about" },
+      { href: "/about", label: "About", icon: "about" },
     ],
   },
 ];

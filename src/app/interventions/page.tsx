@@ -5,6 +5,7 @@ import { StatusPill, UrgencyBadge } from "@/components/severity";
 import { label, formatDate } from "@/lib/format";
 import { INTERVENTION_CATALOGUE } from "@/lib/intervention-engine";
 import { INTERVENTION_STATUSES, TEAMS } from "@/lib/types";
+import { agencyForType } from "@/lib/places";
 
 export const dynamic = "force-dynamic";
 
@@ -44,7 +45,7 @@ export default async function InterventionsPage({ searchParams }: { searchParams
       ) : (
         <Table>
           <thead><tr>
-            <th className="th">Intervention</th><th className="th">Case</th><th className="th">Team</th><th className="th">Urgency</th><th className="th">Status</th><th className="th">Target</th><th className="th">Outcome</th>
+            <th className="th">Intervention</th><th className="th">Case</th><th className="th">Delivery partner</th><th className="th">Urgency</th><th className="th">Status</th><th className="th">Target</th><th className="th">Outcome</th>
           </tr></thead>
           <tbody>
             {rows.map(({ i, caseRef, locality }) => {
@@ -53,7 +54,7 @@ export default async function InterventionsPage({ searchParams }: { searchParams
                 <tr key={i.id} className="border-t border-graphite-100 hover:bg-limestone-50">
                   <td className={`td rail ${RAIL[i.urgency] ?? "border-graphite-200"}`}><span className="font-medium text-ink-900">{i.label}</span><div className="text-xs text-graphite-500">{i.ref} · {locality}</div></td>
                   <td className="td"><Link href={`/cases/${caseRef}`} className="text-ink-700 hover:underline">{caseRef}</Link></td>
-                  <td className="td">{i.team}</td>
+                  <td className="td">{agencyForType(i.type)}<div className="text-xs text-graphite-500">{i.team}</div></td>
                   <td className="td"><UrgencyBadge urgency={i.urgency} /></td>
                   <td className="td"><StatusPill status={i.status} /></td>
                   <td className="td"><span className={late ? "font-medium text-risk-critical-700" : "text-graphite-700"}>{formatDate(i.targetDate)}{late && <span className="block text-xs">late</span>}</span></td>
