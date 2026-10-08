@@ -33,6 +33,8 @@ export interface QueueRow {
   secondaryRisk: string | null;
   confidence: string;
   urgency: string;
+  urgencyReason: string | null;
+  urgencyEscalated: boolean;
   reviewStatus: string;
   caseRef: string | null;
   caseStatus: string | null;

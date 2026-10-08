@@ -15,6 +15,7 @@ export const Icon = {
   governance: (p: P) => (<svg {...base(p)}><path d="M10 3l6 2v4c0 4-2.6 6.3-6 8-3.4-1.7-6-4-6-8V5z" /></svg>),
   methodology: (p: P) => (<svg {...base(p)}><path d="M5 3h10v14H5zM8 7h4M8 10h4M8 13h2" /></svg>),
   simulator: (p: P) => (<svg {...base(p)}><circle cx="6" cy="7" r="2" /><circle cx="14" cy="13" r="2" /><path d="M4 7h-.5M8 7h8M16 13h.5M12 13H4" /></svg>),
+  place: (p: P) => (<svg {...base(p)}><path d="M10 17s5-4.2 5-8a5 5 0 0 0-10 0c0 3.8 5 8 5 8z" /><circle cx="10" cy="9" r="1.8" /></svg>),
   demo: (p: P) => (<svg {...base(p)}><path d="M7 5l9 5-9 5z" /></svg>),
   about: (p: P) => (<svg {...base(p)}><circle cx="10" cy="10" r="7" /><path d="M10 9v4M10 6.5h.01" /></svg>),
 };

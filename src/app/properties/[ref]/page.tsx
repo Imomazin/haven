@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getPropertyByRef } from "@/db/queries";
 import { Card, SectionTitle, Definition } from "@/components/ui";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { RiskExplanation } from "@/components/risk-explanation";
+import { PropertyCondition } from "@/components/property-condition";
 import { RiskBadge, StatusPill } from "@/components/severity";
 import { label } from "@/lib/format";
 
@@ -79,8 +79,8 @@ export default async function PropertyDetail({ params }: { params: Promise<{ ref
 
       <div className="mt-5 grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <SectionTitle sub="Recomputed live from stored signals">Risk assessment</SectionTitle>
-          {rec.assessment ? <RiskExplanation a={rec.assessment} /> : <p className="text-sm text-graphite-500">No household is currently linked to this property, so no household-level risk is assessed.</p>}
+          <SectionTitle sub="Fabric, environment and recurrence — recomputed live from stored signals">Condition &amp; hazard assessment</SectionTitle>
+          {rec.assessment ? <PropertyCondition a={rec.assessment} p={p} householdRef={rec.household?.ref ?? null} /> : <p className="text-sm text-graphite-500">No household is currently linked to this property, so no live assessment is computed.</p>}
         </Card>
         <Card>
           <SectionTitle>Related cases</SectionTitle>
@@ -93,6 +93,11 @@ export default async function PropertyDetail({ params }: { params: Promise<{ ref
           ) : (
             <p className="text-sm text-graphite-400">No cases opened.</p>
           )}
+          <div className="mt-4 border-t border-graphite-100 pt-3 text-sm">
+            <p className="field-label">Neighbourhood</p>
+            <p className="mt-1 text-graphite-600">Part of <span className="font-medium text-ink-900">{p.locality}</span>.</p>
+            <Link href={`/risk-queue?locality=${encodeURIComponent(p.locality)}`} className="mt-1 inline-block text-ink-700 underline">See local risk →</Link>
+          </div>
         </Card>
       </div>
     </div>

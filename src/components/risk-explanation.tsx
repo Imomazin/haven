@@ -11,13 +11,31 @@ export function RiskExplanation({ a }: { a: RiskAssessment }) {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
         <RiskBadge band={a.band} score={a.overallScore} />
-        <UrgencyBadge urgency={a.urgency} />
+        <UrgencyBadge urgency={a.urgency} escalated={a.urgencyEscalated} />
         <ConfidenceBadge confidence={a.confidence} />
         <span className="text-xs text-graphite-500">
           Primary: <span className="font-medium text-ink-800">{label(a.primaryRisk)}</span>
           {a.secondaryRisk && <> · Secondary: <span className="font-medium text-ink-800">{label(a.secondaryRisk)}</span></>}
         </span>
       </div>
+
+      {a.urgencyEscalated && a.urgencyReasons.length > 0 && (
+        <div className="rounded-lg border-l-4 border-terracotta-500 bg-terracotta-50 px-4 py-3">
+          <p className="text-sm font-semibold text-ink-900">
+            Overall risk {a.band} · response urgency {a.urgency}
+          </p>
+          <p className="mt-0.5 text-xs text-graphite-600">
+            Structural risk is {a.band.toLowerCase()}, but an acute signal warrants a faster response:
+          </p>
+          <ul className="mt-1.5 space-y-0.5">
+            {a.urgencyReasons.map((reason) => (
+              <li key={reason} className="flex items-center gap-1.5 text-sm text-terracotta-700">
+                <span aria-hidden className="h-1 w-1 rounded-full bg-current" />{reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div>
         <h3 className="mb-2 text-sm font-semibold text-ink-800">Component scores</h3>

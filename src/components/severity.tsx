@@ -79,7 +79,7 @@ export function StatusPill({ status }: { status: string }) {
   return <span className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium ${tone}`}><span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />{label(status)}</span>;
 }
 
-export function UrgencyBadge({ urgency }: { urgency: string }) {
+export function UrgencyBadge({ urgency, escalated = false }: { urgency: string; escalated?: boolean }) {
   const tones: Record<string, string> = {
     Immediate: "bg-risk-critical-50 text-risk-critical-700 border-risk-critical-200",
     Soon: "bg-risk-high-50 text-risk-high-700 border-risk-high-200",
@@ -88,9 +88,31 @@ export function UrgencyBadge({ urgency }: { urgency: string }) {
   };
   const marks: Record<string, string> = { Immediate: "●●●", Soon: "●●", Scheduled: "●", Routine: "○" };
   return (
-    <span className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-medium ${tones[urgency] ?? tones.Routine}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs font-medium ${tones[urgency] ?? tones.Routine}`}
+      title={escalated ? "Response urgency escalated above the risk band by an acute signal" : undefined}
+    >
       <span aria-hidden className="text-[8px] leading-none tracking-tighter">{marks[urgency] ?? "○"}</span>
       {urgency}
+      {escalated && <span aria-hidden title="Escalated above band" className="ml-0.5 font-bold">↑</span>}
+    </span>
+  );
+}
+
+/**
+ * One-line explanation shown when response urgency outranks the overall band
+ * because of an acute signal. Makes "Low risk · Immediate" read as intentional
+ * rather than contradictory.
+ */
+export function EscalationNote({ reason, className = "" }: { reason: string; className?: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs text-terracotta-700 ${className}`}>
+      <svg width="11" height="11" viewBox="0 0 16 16" aria-hidden className="shrink-0">
+        <path fill="currentColor" d="M8 1.5 15 14H1z" />
+        <path stroke="#fff" strokeWidth="1.6" d="M8 6v4" />
+        <circle cx="8" cy="12" r="0.8" fill="#fff" />
+      </svg>
+      <span>{reason}</span>
     </span>
   );
 }
