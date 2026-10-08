@@ -3,23 +3,40 @@
 // along the Firth of Clyde for a local SVG map — no external mapping API.
 
 export interface PlacePoint { x: number; y: number }
+export type LabelAnchor = "start" | "middle" | "end";
+export interface LocalityGeo extends PlacePoint {
+  // Curated label offset + anchor so the ten names never collide on the map.
+  // Coastal towns label upward into the firth; inland towns label downward.
+  labelDx: number;
+  labelDy: number;
+  anchor: LabelAnchor;
+}
 
-// Normalised 0–100 coordinates. Water sits toward the top (low y) along the Clyde.
-export const LOCALITY_GEO: Record<string, PlacePoint> = {
-  "Port Glasgow": { x: 84, y: 30 },
-  "Greenock East": { x: 67, y: 31 },
-  "Greenock Central": { x: 54, y: 29 },
-  "Greenock West": { x: 44, y: 33 },
-  Gourock: { x: 29, y: 37 },
-  Branchton: { x: 52, y: 53 },
-  Larkfield: { x: 41, y: 51 },
-  Kilmacolm: { x: 80, y: 72 },
-  Inverkip: { x: 23, y: 63 },
-  "Wemyss Bay": { x: 15, y: 77 },
+// Stylised coordinates on a 0–100 × 0–72 canvas. The Firth of Clyde fills the
+// top; Inverclyde's towns sit along the south bank (Gourock → Greenock →
+// Port Glasgow) with Inverkip and Wemyss Bay down the west coast and
+// Larkfield, Branchton and Kilmacolm inland. Positions are illustrative, not
+// survey-accurate, and need no external mapping service.
+export const LOCALITY_GEO: Record<string, LocalityGeo> = {
+  Gourock: { x: 17, y: 31, labelDx: -1, labelDy: -5, anchor: "end" },
+  "Greenock West": { x: 33, y: 27, labelDx: 0, labelDy: -5, anchor: "middle" },
+  "Greenock Central": { x: 47, y: 24, labelDx: 0, labelDy: -8.5, anchor: "middle" },
+  "Greenock East": { x: 61, y: 26, labelDx: 2, labelDy: -5, anchor: "middle" },
+  "Port Glasgow": { x: 80, y: 30, labelDx: 0, labelDy: -5, anchor: "middle" },
+  Inverkip: { x: 16, y: 49, labelDx: 0, labelDy: 5.5, anchor: "middle" },
+  "Wemyss Bay": { x: 11, y: 63, labelDx: 4, labelDy: 1.2, anchor: "start" },
+  Larkfield: { x: 35, y: 48, labelDx: 0, labelDy: 5.5, anchor: "middle" },
+  Branchton: { x: 49, y: 52, labelDx: 0, labelDy: 5.5, anchor: "middle" },
+  Kilmacolm: { x: 82, y: 62, labelDx: 0, labelDy: 5.5, anchor: "middle" },
 };
 
 export function localityPoint(locality: string): PlacePoint {
-  return LOCALITY_GEO[locality] ?? { x: 50, y: 50 };
+  const g = LOCALITY_GEO[locality];
+  return g ? { x: g.x, y: g.y } : { x: 50, y: 50 };
+}
+
+export function localityGeo(locality: string): LocalityGeo {
+  return LOCALITY_GEO[locality] ?? { x: 50, y: 50, labelDx: 0, labelDy: 5.5, anchor: "middle" };
 }
 
 // Synthetic delivery partners / agencies (plausible Scottish housing ecosystem).

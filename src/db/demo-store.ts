@@ -6,7 +6,7 @@
 // It mirrors the shapes returned by src/db/queries.ts (the Neon-backed path).
 
 import { buildDataset, type Dataset, type PropertyRow, type HouseholdRow } from "@/seed/generate";
-import { assessRisk } from "@/lib/risk-engine";
+import { assessRisk, computeUrgency } from "@/lib/risk-engine";
 import { recommendInterventions } from "@/lib/intervention-engine";
 import { planNewCase } from "@/lib/case-planning";
 import { computeOperational } from "@/lib/operational";
@@ -89,10 +89,11 @@ export const demo = {
       const h = d.households.find((x) => x.id === a.householdId)!;
       const p = d.properties.find((x) => x.id === a.propertyId)!;
       const c = d.cases.find((x) => x.householdId === h.id && x.status !== "closed") ?? null;
+      const urg = computeUrgency(a.overallScore, p, h);
       return {
         householdRef: h.ref, propertyRef: p.ref, locality: p.locality, propertyType: p.propertyType,
         overallScore: a.overallScore, band: a.band, primaryRisk: a.primaryRisk, secondaryRisk: a.secondaryRisk,
-        confidence: a.confidence, urgency: a.urgency, reviewStatus: a.reviewStatus,
+        confidence: a.confidence, urgency: a.urgency, urgencyReason: urg.reasons[0] ?? null, urgencyEscalated: urg.escalated, reviewStatus: a.reviewStatus,
         caseRef: c?.ref ?? null, caseStatus: c?.status ?? null, ownerTeam: c?.ownerTeam ?? null, ownerName: c?.ownerName ?? null,
         responseDueAt: toDate(c?.responseDueAt ?? null),
         daysOpen: c ? Math.floor((now - new Date(c.openedAt).getTime()) / 86400000) : null,
@@ -163,7 +164,10 @@ export const demo = {
     if (!household) return null;
     const property = d.properties.find((p) => p.id === household.propertyId)!;
     const assessment = assessmentFor(property.id, household.id);
-    const relatedCases = d.cases.filter((c) => c.householdId === household.id).map((c) => ({ ref: c.ref, status: c.status, title: c.title }));
+    const relatedCases = d.cases.filter((c) => c.householdId === household.id).map((c) => {
+      const active = d.interventions.find((it) => it.caseId === c.id && (it.status === "in_progress" || it.status === "scheduled"));
+      return { ref: c.ref, status: c.status, title: c.title, ownerName: c.ownerName ?? null, activeIntervention: active?.label ?? null };
+    });
     return { household: cast<any>(household), property: cast<any>(property), assessment, cases: relatedCases };
   },
 

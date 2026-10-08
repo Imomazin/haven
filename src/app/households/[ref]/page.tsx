@@ -38,7 +38,7 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <RiskBadge band={a.band} score={a.overallScore} />
-              <UrgencyBadge urgency={a.urgency} />
+              <UrgencyBadge urgency={a.urgency} escalated={a.urgencyEscalated} />
               <ConfidenceBadge confidence={a.confidence} />
             </div>
           </div>
@@ -101,9 +101,15 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
           <Card>
             <SectionTitle>Cases</SectionTitle>
             {cases.length ? (
-              <ul className="space-y-1.5 text-sm">
+              <ul className="space-y-2.5 text-sm">
                 {cases.map((c) => (
-                  <li key={c.ref} className="flex items-center justify-between gap-2"><Link href={`/cases/${c.ref}`} className="text-ink-700 underline">{c.ref}</Link><StatusPill status={c.status} /></li>
+                  <li key={c.ref} className="space-y-1">
+                    <div className="flex items-center justify-between gap-2"><Link href={`/cases/${c.ref}`} className="font-medium text-ink-700 underline">{c.ref}</Link><StatusPill status={c.status} /></div>
+                    <dl className="text-xs text-graphite-600">
+                      <div className="flex justify-between gap-2"><dt className="text-graphite-500">Owner</dt><dd className="text-right text-ink-800">{c.ownerName ?? "Unassigned"}</dd></div>
+                      {c.activeIntervention && <div className="flex justify-between gap-2"><dt className="text-graphite-500">Current action</dt><dd className="text-right text-ink-800">{c.activeIntervention}</dd></div>}
+                    </dl>
+                  </li>
                 ))}
               </ul>
             ) : (

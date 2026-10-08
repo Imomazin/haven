@@ -42,7 +42,7 @@ export default async function CaseDetail({ params }: { params: Promise<{ ref: st
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <StatusPill status={c.status} />
               <RiskBadge band={c.currentBand ?? assessment.band} score={c.currentRiskScore ?? assessment.overallScore} />
-              <UrgencyBadge urgency={assessment.urgency} />
+              <UrgencyBadge urgency={assessment.urgency} escalated={assessment.urgencyEscalated} />
               <span className="text-sm text-graphite-500">
                 <Link href={`/properties/${p.ref}`} className="text-ink-700 hover:underline">{p.ref}</Link> · <Link href={`/households/${h.ref}`} className="text-ink-700 hover:underline">{h.ref}</Link> · {p.locality}
               </span>

@@ -13,8 +13,8 @@ import {
   type Property,
   type Household,
 } from "./schema";
-import { assessRisk } from "@/lib/risk-engine";
-import type { RiskInput } from "@/lib/types";
+import { assessRisk, computeUrgency } from "@/lib/risk-engine";
+import type { RiskInput, HouseholdSignals } from "@/lib/types";
 import { demo } from "./demo-store";
 import { hasDb } from "./view-types";
 import { computeOperational } from "@/lib/operational";
@@ -187,6 +187,14 @@ export async function getRiskQueue(filters: {
       confidence: riskAssessments.confidence,
       urgency: riskAssessments.urgency,
       reviewStatus: riskAssessments.reviewStatus,
+      indoorWinterTempC: properties.indoorWinterTempC,
+      indoorHumidityPct: properties.indoorHumidityPct,
+      childrenUnder5: households.childrenUnder5,
+      adultsOver65: households.adultsOver65,
+      childrenPresent: households.childrenPresent,
+      healthVulnerability: households.healthVulnerability,
+      fuelPovertyIndicator: households.fuelPovertyIndicator,
+      energyUsePattern: households.energyUsePattern,
       caseRef: cases.ref,
       caseStatus: cases.status,
       ownerTeam: cases.ownerTeam,
@@ -217,25 +225,35 @@ export async function getRiskQueue(filters: {
     .orderBy(desc(riskAssessments.urgencyScore), desc(riskAssessments.overallScore));
 
   const now = Date.now();
-  let mapped: QueueRow[] = rows.map((r) => ({
-    householdRef: r.householdRef,
-    propertyRef: r.propertyRef,
-    locality: r.locality,
-    propertyType: r.propertyType,
-    overallScore: r.overallScore,
-    band: r.band,
-    primaryRisk: r.primaryRisk,
-    secondaryRisk: r.secondaryRisk,
-    confidence: r.confidence,
-    urgency: r.urgency,
-    reviewStatus: r.reviewStatus,
-    caseRef: r.caseRef,
-    caseStatus: r.caseStatus,
-    ownerTeam: r.ownerTeam,
-    ownerName: r.ownerName,
-    responseDueAt: r.responseDueAt,
-    daysOpen: r.openedAt ? Math.floor((now - new Date(r.openedAt).getTime()) / 86400000) : null,
-  }));
+  let mapped: QueueRow[] = rows.map((r) => {
+    const urg = computeUrgency(r.overallScore, r, {
+      childrenUnder5: r.childrenUnder5, adultsOver65: r.adultsOver65, childrenPresent: r.childrenPresent,
+      healthVulnerability: r.healthVulnerability as HouseholdSignals["healthVulnerability"],
+      fuelPovertyIndicator: r.fuelPovertyIndicator as HouseholdSignals["fuelPovertyIndicator"],
+      energyUsePattern: r.energyUsePattern as HouseholdSignals["energyUsePattern"],
+    });
+    return {
+      householdRef: r.householdRef,
+      propertyRef: r.propertyRef,
+      locality: r.locality,
+      propertyType: r.propertyType,
+      overallScore: r.overallScore,
+      band: r.band,
+      primaryRisk: r.primaryRisk,
+      secondaryRisk: r.secondaryRisk,
+      confidence: r.confidence,
+      urgency: r.urgency,
+      urgencyReason: urg.reasons[0] ?? null,
+      urgencyEscalated: urg.escalated,
+      reviewStatus: r.reviewStatus,
+      caseRef: r.caseRef,
+      caseStatus: r.caseStatus,
+      ownerTeam: r.ownerTeam,
+      ownerName: r.ownerName,
+      responseDueAt: r.responseDueAt,
+      daysOpen: r.openedAt ? Math.floor((now - new Date(r.openedAt).getTime()) / 86400000) : null,
+    };
+  });
 
   if (filters.sort === "score") mapped = mapped.sort((a, b) => b.overallScore - a.overallScore);
   else if (filters.sort === "locality") mapped = mapped.sort((a, b) => a.locality.localeCompare(b.locality));
@@ -313,7 +331,16 @@ export async function getHouseholdByRef(ref: string) {
   if (!h) return null;
   const [p] = await db.select().from(properties).where(eq(properties.id, h.propertyId)).limit(1);
   const assessment = assessRisk(toRiskInput(p, h));
-  const relatedCases = await db.select({ ref: cases.ref, status: cases.status, title: cases.title }).from(cases).where(eq(cases.householdId, h.id));
+  const caseRows = await db.select({ id: cases.id, ref: cases.ref, status: cases.status, title: cases.title, ownerName: cases.ownerName }).from(cases).where(eq(cases.householdId, h.id));
+  const activeInts = caseRows.length
+    ? await db.select({ caseId: interventions.caseId, label: interventions.label, status: interventions.status })
+        .from(interventions)
+        .where(and(inArray(interventions.caseId, caseRows.map((c) => c.id)), inArray(interventions.status, ["in_progress", "scheduled"])))
+    : [];
+  const relatedCases = caseRows.map((c) => ({
+    ref: c.ref, status: c.status, title: c.title, ownerName: c.ownerName ?? null,
+    activeIntervention: activeInts.find((i) => i.caseId === c.id)?.label ?? null,
+  }));
   return { household: h, property: p, assessment, cases: relatedCases };
 }
 

@@ -1,44 +1,74 @@
 import { BAND_HEX } from "@/lib/constants";
-import type { PlaceAggregate } from "@/lib/places";
+import { localityGeo, type PlaceAggregate } from "@/lib/places";
 import { label } from "@/lib/format";
 
-// Stylised local map of Inverclyde along the Firth of Clyde. Not survey-accurate;
-// a calm, architectural orientation device. Markers are sized by household count
-// and coloured by the area's most severe band. Each links into the risk queue.
+// Stylised map of Inverclyde along the Firth of Clyde. Illustrative, not
+// survey-accurate, and drawn locally with no external mapping service. Towns
+// are strung along the south bank; marker size reflects households monitored
+// and colour the area's most severe band. Label positions are curated per
+// locality (see LOCALITY_GEO) so the ten names never overlap.
 export function PlaceMap({ places }: { places: PlaceAggregate[] }) {
   const maxHh = Math.max(1, ...places.map((p) => p.households));
-  const r = (hh: number) => 2.4 + (hh / maxHh) * 4.2;
-
-  // LOCALITY_GEO uses normalised 0–100 coordinates while this deliberately wide
-  // map uses a 100×62 viewBox. Scale Y into the rendered coordinate system so
-  // southern localities remain visible instead of falling below the SVG bounds.
-  const mapY = (y: number) => y * 0.62;
+  const r = (hh: number) => 2.0 + (hh / maxHh) * 3.4;
 
   return (
     <figure className="m-0">
-      <div className="overflow-hidden rounded-lg border border-graphite-200/70 bg-[#eef2f1]">
-        <svg viewBox="0 0 100 62" className="h-auto w-full" role="img" aria-label="Neighbourhood risk map of Inverclyde">
+      <div className="overflow-hidden rounded-lg border border-graphite-200/70 bg-[#dde6e8]">
+        <svg viewBox="0 0 100 72" className="h-auto w-full" role="img" aria-label="Neighbourhood risk map of Inverclyde along the Firth of Clyde">
+          <defs>
+            <linearGradient id="firth" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#c7d6da" />
+              <stop offset="1" stopColor="#dbe6e8" />
+            </linearGradient>
+          </defs>
+
           {/* Firth of Clyde */}
-          <rect x="0" y="0" width="100" height="62" fill="#e7edec" />
-          <path d="M0,0 H100 V17 C82,23 60,19 44,24 C28,29 14,26 0,31 Z" fill="#cdd9de" />
-          <path d="M0,31 C14,26 28,29 44,24 C60,19 82,23 100,17" fill="none" stroke="#9fb3b8" strokeWidth="0.4" />
-          {/* Land */}
-          <path d="M0,31 C14,26 28,29 44,24 C60,19 82,23 100,17 V62 H0 Z" fill="#f4f0e7" />
-          <text x="7" y="12" fill="#6b7d82" fontSize="2.6" fontStyle="italic">Firth of Clyde</text>
+          <rect x="0" y="0" width="100" height="72" fill="url(#firth)" />
+          {/* faint depth contours in the water */}
+          <path d="M0,16 C24,12 46,15 66,13 C80,12 92,14 100,13" fill="none" stroke="#b7cacf" strokeWidth="0.3" opacity="0.7" />
+          <path d="M0,9 C26,6 50,8 72,6 C84,5 94,7 100,6" fill="none" stroke="#bfd1d6" strokeWidth="0.3" opacity="0.5" />
+
+          {/* Inverclyde land mass */}
+          <path
+            d="M100,72 L0,72 L0,60 C6,52 10,47 16,42 C19,38 18,33 23,31 C34,27 44,25 54,25 C66,25 76,28 88,29 L100,30 Z"
+            fill="#f1ece1"
+          />
+          {/* coastline */}
+          <path
+            d="M0,60 C6,52 10,47 16,42 C19,38 18,33 23,31 C34,27 44,25 54,25 C66,25 76,28 88,29 L100,30"
+            fill="none"
+            stroke="#9fb7bc"
+            strokeWidth="0.5"
+          />
+          <text x="6" y="11" fill="#5f777d" fontSize="2.8" fontStyle="italic" letterSpacing="0.3">Firth of Clyde</text>
 
           {places.map((p) => {
+            const g = localityGeo(p.locality);
             const c = BAND_HEX[p.topBand];
             const rad = r(p.households);
-            const cy = mapY(p.point.y);
             return (
-              <a key={p.locality} href={`/risk-queue?locality=${encodeURIComponent(p.locality)}`}>
+              <a key={p.locality} href={`/risk-queue?locality=${encodeURIComponent(p.locality)}`} className="group">
                 <title>{`${p.locality} — ${p.households} households, ${p.highCritical} high/critical, ${p.openCases} open cases`}</title>
-                <circle cx={p.point.x} cy={cy} r={rad + 2.2} fill={c} opacity={0.14} />
-                <circle cx={p.point.x} cy={cy} r={rad} fill={c} opacity={0.9} stroke="#fff" strokeWidth="0.5" />
-                {p.highCritical > 0 && (
-                  <text x={p.point.x} y={cy + 1.1} textAnchor="middle" fontSize={rad * 0.9} fontWeight="700" fill="#fff">{p.highCritical}</text>
+                {/* soft halo */}
+                <circle cx={p.point.x} cy={p.point.y} r={rad + 2} fill={c} opacity={0.16} />
+                <circle cx={p.point.x} cy={p.point.y} r={rad} fill={c} opacity={0.92} stroke="#fff" strokeWidth="0.6" className="transition-opacity group-hover:opacity-100" />
+                {p.highCritical > 0 && rad >= 2.8 && (
+                  <text x={p.point.x} y={p.point.y + 1.1} textAnchor="middle" fontSize={rad * 0.95} fontWeight="700" fill="#fff">{p.highCritical}</text>
                 )}
-                <text x={p.point.x} y={Math.min(59, cy + rad + 3.1)} textAnchor="middle" fontSize="2.5" fontWeight="600" fill="#213250">{p.locality}</text>
+                <text
+                  x={p.point.x + g.labelDx}
+                  y={p.point.y + g.labelDy}
+                  textAnchor={g.anchor}
+                  fontSize="2.7"
+                  fontWeight="600"
+                  fill="#1f2d3d"
+                  stroke="#f1ece1"
+                  strokeWidth="0.7"
+                  paintOrder="stroke"
+                  style={{ strokeLinejoin: "round" }}
+                >
+                  {p.locality}
+                </text>
               </a>
             );
           })}

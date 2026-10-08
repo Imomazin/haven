@@ -5,7 +5,7 @@ import { getRole, ROLE_COOKIE, roleLinks } from "@/lib/roles";
 import { agencyForType } from "@/lib/places";
 import { Card, SectionTitle, SegmentBar } from "@/components/ui";
 import { PlaceMap } from "@/components/place-map";
-import { RiskBadge, UrgencyBadge, StatusPill } from "@/components/severity";
+import { RiskBadge, UrgencyBadge, StatusPill, EscalationNote } from "@/components/severity";
 import { label, formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -42,7 +42,10 @@ export default async function PortfolioPage() {
                   {top.propertyRef} · {top.locality}
                 </Link>
                 <RiskBadge band={top.band} score={top.overallScore} />
-                <UrgencyBadge urgency={top.urgency} />
+                <UrgencyBadge urgency={top.urgency} escalated={top.urgencyEscalated} />
+                {top.urgencyEscalated && top.urgencyReason && (
+                  <span className="w-full text-xs text-terracotta-200 sm:w-auto">Why now: {top.urgencyReason}</span>
+                )}
               </div>
             )}
           </div>
@@ -91,14 +94,17 @@ export default async function PortfolioPage() {
           <SectionTitle sub="Highest urgency across the portfolio" action={<Link href="/risk-queue" className="text-xs font-medium text-ink-700 hover:underline">Open queue →</Link>}>Households needing intervention</SectionTitle>
           <ul className="divide-y divide-graphite-100">
             {priority.map((r) => (
-              <li key={r.householdRef} className="flex items-center gap-3 py-2.5">
+              <li key={r.householdRef} className="flex items-start gap-3 py-2.5">
                 <RiskBadge band={r.band} score={r.overallScore} />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium text-ink-900"><Link href={`/properties/${r.propertyRef}`} className="hover:underline">{r.propertyRef}</Link> <span className="font-normal text-graphite-500">· {r.locality}</span></div>
                   <div className="truncate text-xs text-graphite-500">{label(r.primaryRisk)} · {r.ownerName ?? "unassigned"}</div>
+                  {r.urgencyEscalated && r.urgencyReason && <EscalationNote reason={r.urgencyReason} className="mt-0.5" />}
                 </div>
-                <UrgencyBadge urgency={r.urgency} />
-                {r.caseRef && <Link href={`/cases/${r.caseRef}`} className="hidden text-xs font-medium text-ink-700 hover:underline sm:inline">{r.caseRef}</Link>}
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <UrgencyBadge urgency={r.urgency} escalated={r.urgencyEscalated} />
+                  {r.caseRef && <Link href={`/cases/${r.caseRef}`} className="hidden text-xs font-medium text-ink-700 hover:underline sm:inline">{r.caseRef}</Link>}
+                </div>
               </li>
             ))}
           </ul>
