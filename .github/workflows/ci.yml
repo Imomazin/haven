@@ -2,9 +2,17 @@ name: CI
 
 on:
   push:
-    branches: ["**"]
+    branches: [main]
   pull_request:
     branches: ["**"]
+
+# A push to a feature branch with an open PR would otherwise start two
+# identical runs (push + pull_request) that race on the shared npm cache.
+# Scope push to main so feature branches run exactly once via pull_request,
+# and cancel superseded runs on the same ref.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   verify:
