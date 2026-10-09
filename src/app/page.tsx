@@ -7,6 +7,8 @@ import { Card, SectionTitle, SegmentBar } from "@/components/ui";
 import { PlaceMap } from "@/components/place-map";
 import { RiskBadge, UrgencyBadge, StatusPill, EscalationNote } from "@/components/severity";
 import { label, formatDate } from "@/lib/format";
+import { ecosystemSummary, CONNECTORS } from "@/integrations/registry";
+import { HealthDot } from "@/components/integration";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,8 @@ export default async function PortfolioPage() {
   const urgent = queue.filter((r) => r.urgency === "Immediate").length;
   const priority = queue.slice(0, 7);
   const top = queue[0];
+  const eco = ecosystemSummary();
+  const liveFeeds = CONNECTORS.filter((c) => c.state !== "not_configured").sort((a, b) => b.sync.recordsProcessed - a.sync.recordsProcessed).slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -135,6 +139,33 @@ export default async function PortfolioPage() {
           </Card>
         </div>
       </div>
+
+      {/* Ecosystem coverage */}
+      <Card>
+        <SectionTitle sub="Signals flowing in from connected systems" action={<Link href="/ecosystem" className="text-xs font-medium text-ink-700 hover:underline">Integration centre →</Link>}>Live data feeds</SectionTitle>
+        <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr]">
+          <div className="grid grid-cols-2 gap-3 self-start sm:grid-cols-4 lg:grid-cols-2">
+            {[["Connected systems", `${eco.total - eco.notConfigured}/${eco.total}`, `${eco.categories} categories`], ["Records processed", eco.recordsProcessed.toLocaleString(), `${eco.recordsFailed} failed`], ["Avg uptime", `${eco.avgUptime}%`, `${eco.webhooksActive} webhooks`], ["Ready to configure", eco.notConfigured, "adapters available"]].map(([k, v, h]) => (
+              <div key={k as string} className="rounded-lg border border-graphite-200/70 bg-limestone-50 p-3">
+                <p className="field-label">{k}</p>
+                <p className="mt-0.5 font-display text-xl font-semibold text-ink-900">{v}</p>
+                <p className="text-[11px] text-graphite-500">{h}</p>
+              </div>
+            ))}
+          </div>
+          <ul className="divide-y divide-graphite-100">
+            {liveFeeds.map((c) => (
+              <li key={c.slug} className="flex items-center gap-3 py-2">
+                <HealthDot health={c.sync.health} label={false} />
+                <Link href={`/ecosystem/${c.slug}`} className="min-w-0 flex-1 truncate text-sm font-medium text-ink-900 hover:underline">{c.name}</Link>
+                <span className="hidden text-xs text-graphite-500 sm:inline">{c.provenanceLabel}</span>
+                <span className="tabular-nums text-sm text-ink-800">{c.sync.recordsProcessed.toLocaleString()}</span>
+                <span className="text-xs text-graphite-400">records</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Card>
 
       {/* Recent activity */}
       <Card>

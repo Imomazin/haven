@@ -38,6 +38,13 @@ const GROUPS: { heading: string; items: Item[] }[] = [
     ],
   },
   {
+    heading: "Ecosystem",
+    items: [
+      { href: "/ecosystem", label: "Integrations", icon: "ecosystem" },
+      { href: "/ecosystem-demo", label: "Guided ecosystem", icon: "demo" },
+    ],
+  },
+  {
     heading: "Reference",
     items: [
       { href: "/methodology", label: "Methodology", icon: "methodology" },

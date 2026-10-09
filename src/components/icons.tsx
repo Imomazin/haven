@@ -16,6 +16,7 @@ export const Icon = {
   methodology: (p: P) => (<svg {...base(p)}><path d="M5 3h10v14H5zM8 7h4M8 10h4M8 13h2" /></svg>),
   simulator: (p: P) => (<svg {...base(p)}><circle cx="6" cy="7" r="2" /><circle cx="14" cy="13" r="2" /><path d="M4 7h-.5M8 7h8M16 13h.5M12 13H4" /></svg>),
   place: (p: P) => (<svg {...base(p)}><path d="M10 17s5-4.2 5-8a5 5 0 0 0-10 0c0 3.8 5 8 5 8z" /><circle cx="10" cy="9" r="1.8" /></svg>),
+  ecosystem: (p: P) => (<svg {...base(p)}><circle cx="10" cy="10" r="2.4" /><circle cx="4" cy="4.5" r="1.6" /><circle cx="16" cy="4.5" r="1.6" /><circle cx="4" cy="15.5" r="1.6" /><circle cx="16" cy="15.5" r="1.6" /><path d="M8.3 8.3 5.2 5.6M11.7 8.3l3.1-2.7M8.3 11.7l-3.1 2.7M11.7 11.7l3.1 2.7" /></svg>),
   demo: (p: P) => (<svg {...base(p)}><path d="M7 5l9 5-9 5z" /></svg>),
   about: (p: P) => (<svg {...base(p)}><circle cx="10" cy="10" r="7" /><path d="M10 9v4M10 6.5h.01" /></svg>),
 };

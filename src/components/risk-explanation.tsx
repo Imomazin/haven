@@ -2,8 +2,21 @@ import type { RiskAssessment } from "@/lib/types";
 import { DIMENSION_LABELS, DIMENSION_WEIGHTS, RISK_MODEL_VERSION } from "@/lib/constants";
 import { Meter } from "./ui";
 import { RiskBadge, UrgencyBadge, ConfidenceBadge } from "./severity";
+import { SourceBadge } from "./source-badge";
 import { label } from "@/lib/format";
-import type { RiskDimension } from "@/lib/types";
+import type { RiskDimension, RiskFactor } from "@/lib/types";
+
+// Which source system each risk driver is evidenced by — so a risk score reads
+// as "assembled from your systems", not a black box.
+function driverSource(f: RiskFactor): string {
+  const l = f.label.toLowerCase();
+  if (l.includes("temperature") || l.includes("humidity") || l.includes("co₂") || l.includes("air")) return "Switchee";
+  if (l.includes("epc") || l.includes("energy efficiency")) return "EPC Register";
+  if (l.includes("damp") || l.includes("mould") || l.includes("repair")) return "Civica Cx";
+  if (f.dimension === "recurrence") return "MRI Asset";
+  if (f.dimension === "fuelPoverty" || f.dimension === "householdVulnerability" || f.dimension === "supportNeed") return "Civica Cx";
+  return "Civica Cx";
+}
 
 export function RiskExplanation({ a }: { a: RiskAssessment }) {
   const dims = Object.keys(DIMENSION_LABELS) as RiskDimension[];
@@ -63,7 +76,10 @@ export function RiskExplanation({ a }: { a: RiskAssessment }) {
                   <span className="font-medium text-ink-900">{f.label}</span>
                   <span className="text-xs tabular-nums text-graphite-500">+{f.points}</span>
                 </div>
-                <div className="text-xs text-graphite-500">{f.evidence} · {DIMENSION_LABELS[f.dimension]}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-graphite-500">
+                  <span>{f.evidence} · {DIMENSION_LABELS[f.dimension]}</span>
+                  <SourceBadge source={driverSource(f)} />
+                </div>
               </li>
             ))}
           </ul>
