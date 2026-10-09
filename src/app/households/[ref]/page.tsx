@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getHouseholdByRef, toRiskInput } from "@/db/queries";
 import { recommendInterventions } from "@/lib/intervention-engine";
 import { openCaseForHousehold } from "@/app/actions";
+import { compositionSummary, safeguardingFlags } from "@/lib/places";
 import { Card, SectionTitle, Definition } from "@/components/ui";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RiskExplanation } from "@/components/risk-explanation";
@@ -19,6 +20,8 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
   const recs = recommendInterventions(toRiskInput(p, h), a);
   const nextStep = recs[0];
   const openCase = cases.find((c) => c.status !== "closed") ?? cases[0];
+  const composition = compositionSummary(h);
+  const flags = safeguardingFlags(h, a.band);
 
   return (
     <div>
@@ -31,11 +34,11 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
             <p className="eyebrow mb-1">Household dossier</p>
             <h1 className="font-display text-2xl font-semibold text-ink-900">{h.ref}</h1>
             <p className="mt-1 text-sm text-graphite-600">
-              {h.householdSize}-person household at <Link href={`/properties/${p.ref}`} className="text-ink-700 underline">{p.ref}</Link> · {p.locality} · {label(p.propertyType)}
+              {composition} at <Link href={`/properties/${p.ref}`} className="text-ink-700 underline">{p.ref}</Link> · <Link href={`/risk-queue?locality=${encodeURIComponent(p.locality)}`} className="text-ink-700 underline">{p.locality}</Link> · {label(p.propertyType)}
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <RiskBadge band={a.band} score={a.overallScore} />
-              <UrgencyBadge urgency={a.urgency} />
+              <UrgencyBadge urgency={a.urgency} escalated={a.urgencyEscalated} />
               <ConfidenceBadge confidence={a.confidence} />
             </div>
           </div>
@@ -56,6 +59,16 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
           </div>
         </div>
       </div>
+
+      {flags.length > 0 && (
+        <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border-l-4 border-terracotta-500 bg-terracotta-50 px-4 py-3">
+          <span className="field-label text-terracotta-700">Safeguarding signals</span>
+          {flags.map((f) => (
+            <span key={f} className="inline-flex items-center rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-ink-800 shadow-subtle">{f}</span>
+          ))}
+          <span className="ml-auto text-[11px] text-graphite-500">Non-clinical indicators for review — not a determination.</span>
+        </div>
+      )}
 
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -88,14 +101,30 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
           <Card>
             <SectionTitle>Cases</SectionTitle>
             {cases.length ? (
-              <ul className="space-y-1.5 text-sm">
+              <ul className="space-y-2.5 text-sm">
                 {cases.map((c) => (
-                  <li key={c.ref} className="flex items-center justify-between gap-2"><Link href={`/cases/${c.ref}`} className="text-ink-700 underline">{c.ref}</Link><StatusPill status={c.status} /></li>
+                  <li key={c.ref} className="space-y-1">
+                    <div className="flex items-center justify-between gap-2"><Link href={`/cases/${c.ref}`} className="font-medium text-ink-700 underline">{c.ref}</Link><StatusPill status={c.status} /></div>
+                    <dl className="text-xs text-graphite-600">
+                      <div className="flex justify-between gap-2"><dt className="text-graphite-500">Owner</dt><dd className="text-right text-ink-800">{c.ownerName ?? "Unassigned"}</dd></div>
+                      {c.activeIntervention && <div className="flex justify-between gap-2"><dt className="text-graphite-500">Current action</dt><dd className="text-right text-ink-800">{c.activeIntervention}</dd></div>}
+                    </dl>
+                  </li>
                 ))}
               </ul>
             ) : (
               <p className="text-sm text-graphite-400">No cases opened.</p>
             )}
+          </Card>
+          <Card>
+            <SectionTitle>Neighbourhood</SectionTitle>
+            <p className="text-sm text-graphite-600">
+              This household sits within <span className="font-medium text-ink-900">{p.locality}</span>. Compare it against the wider area to see whether risk here is isolated or part of a local cluster.
+            </p>
+            <div className="mt-3 flex flex-col gap-1.5 text-sm">
+              <Link href={`/risk-queue?locality=${encodeURIComponent(p.locality)}`} className="text-ink-700 underline">Triage {p.locality} →</Link>
+              <Link href="/place" className="text-ink-700 underline">View all neighbourhoods →</Link>
+            </div>
           </Card>
         </div>
       </div>
