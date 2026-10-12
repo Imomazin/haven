@@ -5,6 +5,8 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import { StateBadge, HealthDot, agoLabel } from "@/components/integration";
 import { getConnector } from "@/integrations/registry";
 import { CATEGORY_LABELS, AUTH_LABELS, DIRECTION_LABELS, CAPABILITY_LABELS } from "@/integrations/types";
+import { implementationFor } from "@/integrations/enterprise";
+import { enterpriseAdapter } from "@/integrations/adapters";
 import { formatDateTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -20,6 +22,18 @@ export default async function ConnectorDetail({ params }: { params: Promise<{ sl
   const c = getConnector(slug);
   if (!c) notFound();
   const configured = c.state !== "not_configured";
+  const implementation = implementationFor(c);
+  const adapter = enterpriseAdapter(c.slug);
+  const sampleCapability = c.capabilities[0] ?? null;
+  const sample = adapter && sampleCapability
+    ? await adapter.execute(sampleCapability, {
+        propertyId: 1,
+        householdId: 1,
+        propertyRef: "HAV-P-0001",
+        householdRef: "HAV-H-0001",
+        locality: "Greenock Central",
+      })
+    : null;
 
   return (
     <div>
@@ -34,6 +48,9 @@ export default async function ConnectorDetail({ params }: { params: Promise<{ sl
             <StateBadge state={c.state} />
             {configured && <HealthDot health={c.sync.health} />}
             <span className="text-xs text-graphite-500">{AUTH_LABELS[c.auth]}</span>
+            <span className={`rounded border px-2 py-0.5 text-xs font-semibold ${implementation.level === "executable_demo" ? "border-sage-200 bg-sage-50 text-sage-700" : "border-graphite-200 bg-graphite-100 text-graphite-500"}`}>
+              {implementation.label}
+            </span>
           </div>
         </div>
         <div className="w-full max-w-xs rounded-lg bg-limestone-100 p-4 text-sm">
@@ -43,7 +60,8 @@ export default async function ConnectorDetail({ params }: { params: Promise<{ sl
         </div>
       </div>
 
-      <p className="mb-5 max-w-3xl text-sm text-graphite-700">{c.blurb}</p>
+      <p className="mb-2 max-w-3xl text-sm text-graphite-700">{c.blurb}</p>
+      <p className="mb-5 max-w-3xl text-xs leading-relaxed text-graphite-500">{implementation.detail}</p>
 
       <div className="grid gap-5 lg:grid-cols-3">
         <Card>
@@ -71,7 +89,7 @@ export default async function ConnectorDetail({ params }: { params: Promise<{ sl
               <Definition term="Uptime (30d)">{c.sync.uptimePct}%</Definition>
             </dl>
           ) : (
-            <p className="text-sm text-graphite-500">This connector is not configured. The adapter is implemented and ready; connecting it requires customer-authorised credentials. No data flows until then.</p>
+            <p className="text-sm text-graphite-500">This connector is not configured. The adapter contract and schema mapping are ready; connecting it requires customer-authorised credentials. No data flows until then.</p>
           )}
         </Card>
 
@@ -91,6 +109,36 @@ export default async function ConnectorDetail({ params }: { params: Promise<{ sl
           </div>
         </Card>
       </div>
+
+      <Card className="mt-5">
+        <div className="grid gap-5 xl:grid-cols-[0.72fr_1.28fr]">
+          <div>
+            <SectionTitle sub="A capability-aware request executed by the demonstration adapter">Adapter execution</SectionTitle>
+            {sample ? (
+              <>
+                <div className="mt-3 border-l-2 border-sage-600 pl-3">
+                  <div className="text-xs uppercase tracking-wider text-graphite-500">Executed capability</div>
+                  <div className="mt-1 font-semibold text-ink-900">{CAPABILITY_LABELS[sample.capability]}</div>
+                </div>
+                <div className="mt-4 border-l-2 border-ink-800 pl-3">
+                  <div className="text-xs uppercase tracking-wider text-graphite-500">Mode</div>
+                  <div className="mt-1 font-semibold capitalize text-ink-900">{sample.mode}</div>
+                </div>
+                <p className="mt-4 text-xs leading-relaxed text-graphite-500">This is deterministic synthetic execution for product demonstration. It proves the adapter behaviour without claiming access to a customer tenant.</p>
+              </>
+            ) : (
+              <p className="text-sm text-graphite-500">No operation executes until this connector is configured or it exposes a data capability.</p>
+            )}
+          </div>
+          <div className="min-w-0 rounded-lg border border-graphite-200 bg-[#111820] p-4 text-xs text-slate-100">
+            <div className="mb-2 flex items-center justify-between gap-2 border-b border-white/10 pb-2">
+              <span className="font-semibold">Demonstration response</span>
+              <span className="font-mono text-[10px] text-slate-400">{c.slug}</span>
+            </div>
+            <pre className="max-h-[26rem] overflow-auto whitespace-pre-wrap break-words font-mono leading-relaxed text-slate-200">{sample ? JSON.stringify(sample, null, 2) : JSON.stringify({ status: "awaiting_configuration", connector: c.name }, null, 2)}</pre>
+          </div>
+        </div>
+      </Card>
 
       <Card className="mt-5">
         <SectionTitle sub="Most recent synchronisation jobs (synthetic, deterministic)">Recent activity</SectionTitle>
@@ -121,7 +169,7 @@ export default async function ConnectorDetail({ params }: { params: Promise<{ sl
       </Card>
 
       <p className="mt-6 text-xs text-graphite-400">
-        <Link href="/ecosystem" className="underline">← All connectors</Link> · Demonstration connector. No live customer credentials are configured; telemetry is synthetic and deterministic.
+        <Link href="/ecosystem" className="underline">← All connectors</Link> · No production customer credentials are configured. Demo and sandbox behaviour is synthetic, deterministic and explicitly labelled.
       </p>
     </div>
   );
