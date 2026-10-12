@@ -106,6 +106,27 @@ describe("assessRisk", () => {
     expect(a.urgency).toBe("Immediate");
   });
 
+  it("flags escalation with a reason when urgency outranks a low band", () => {
+    // Sound property but under-heated with young children -> Low band, Immediate urgency.
+    const a = assessRisk(baseInput({ indoorWinterTempC: 13 }, { childrenUnder5: 1, childrenPresent: true, energyUsePattern: "under_heating" }));
+    expect(a.band).toBe("Low");
+    expect(a.urgency).toBe("Immediate");
+    expect(a.urgencyEscalated).toBe(true);
+    expect(a.urgencyReasons.join(" ")).toMatch(/cold home/i);
+  });
+
+  it("does not flag escalation when urgency already tracks a high band", () => {
+    const a = assessRisk(
+      baseInput(
+        { constructionEra: "pre1919", epcRating: "F", wallInsulation: "none", glazing: "single", ventilation: "poor", dampHistoryCount: 3, mouldHistoryCount: 2, indoorHumidityPct: 74, indoorWinterTempC: 15 },
+        { adultsOver65: 1, incomeRiskIndicator: "high", fuelPovertyIndicator: "in_fuel_poverty", healthVulnerability: "significant", energyUsePattern: "under_heating" },
+      ),
+    );
+    expect(["High", "Critical"]).toContain(a.band);
+    expect(a.urgencyEscalated).toBe(false);
+    expect(a.urgencyReasons).toHaveLength(0);
+  });
+
   it("is deterministic for the same input", () => {
     const i = baseInput({ dampHistoryCount: 2 }, { fuelPovertyIndicator: "at_risk" });
     expect(assessRisk(i)).toEqual(assessRisk(i));

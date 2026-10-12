@@ -53,7 +53,7 @@ export default function DemoPage() {
           ))}
         </ol>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/" className="btn-secondary">Overview</Link>
+          <Link href="/portfolio" className="btn-secondary">Overview</Link>
           <Link href="/risk-queue" className="btn-secondary">Risk Queue</Link>
           <Link href="/cases/HAV-C-0001" className="btn-primary">Open flagship case →</Link>
         </div>

@@ -138,8 +138,8 @@ One click, then paste your Neon connection strings when prompted. Step by step:
 
 1. **Import** `Imomazin/haven` into Vercel (the button above, or Vercel dashboard →
    Add New → Project → pick this repo). Project name `haven` (or `haven-civtech` if taken).
-   Set the **Production Branch** to `claude/haven-housing-risk-platform-fkryr1` (or deploy that
-   branch as a **preview**) — do **not** merge `main`.
+   Set the **Production Branch** to your chosen deployment branch (or deploy that
+   branch as a **preview**).
 2. Add two environment variables from your Neon `haven` project:
    - `DATABASE_URL` — the **pooled** connection string (host contains `-pooler`).
    - `DIRECT_URL` — the **unpooled** string (same, without `-pooler`; used only by migrations).

@@ -2,8 +2,21 @@ import type { RiskAssessment } from "@/lib/types";
 import { DIMENSION_LABELS, DIMENSION_WEIGHTS, RISK_MODEL_VERSION } from "@/lib/constants";
 import { Meter } from "./ui";
 import { RiskBadge, UrgencyBadge, ConfidenceBadge } from "./severity";
+import { SourceBadge } from "./source-badge";
 import { label } from "@/lib/format";
-import type { RiskDimension } from "@/lib/types";
+import type { RiskDimension, RiskFactor } from "@/lib/types";
+
+// Which source system each risk driver is evidenced by — so a risk score reads
+// as "assembled from your systems", not a black box.
+function driverSource(f: RiskFactor): string {
+  const l = f.label.toLowerCase();
+  if (l.includes("temperature") || l.includes("humidity") || l.includes("co₂") || l.includes("air")) return "Switchee";
+  if (l.includes("epc") || l.includes("energy efficiency")) return "EPC Register";
+  if (l.includes("damp") || l.includes("mould") || l.includes("repair")) return "Civica Cx";
+  if (f.dimension === "recurrence") return "MRI Asset";
+  if (f.dimension === "fuelPoverty" || f.dimension === "householdVulnerability" || f.dimension === "supportNeed") return "Civica Cx";
+  return "Civica Cx";
+}
 
 export function RiskExplanation({ a }: { a: RiskAssessment }) {
   const dims = Object.keys(DIMENSION_LABELS) as RiskDimension[];
@@ -11,13 +24,31 @@ export function RiskExplanation({ a }: { a: RiskAssessment }) {
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
         <RiskBadge band={a.band} score={a.overallScore} />
-        <UrgencyBadge urgency={a.urgency} />
+        <UrgencyBadge urgency={a.urgency} escalated={a.urgencyEscalated} />
         <ConfidenceBadge confidence={a.confidence} />
         <span className="text-xs text-graphite-500">
           Primary: <span className="font-medium text-ink-800">{label(a.primaryRisk)}</span>
           {a.secondaryRisk && <> · Secondary: <span className="font-medium text-ink-800">{label(a.secondaryRisk)}</span></>}
         </span>
       </div>
+
+      {a.urgencyEscalated && a.urgencyReasons.length > 0 && (
+        <div className="rounded-lg border-l-4 border-terracotta-500 bg-terracotta-50 px-4 py-3">
+          <p className="text-sm font-semibold text-ink-900">
+            Overall risk {a.band} · response urgency {a.urgency}
+          </p>
+          <p className="mt-0.5 text-xs text-graphite-600">
+            Structural risk is {a.band.toLowerCase()}, but an acute signal warrants a faster response:
+          </p>
+          <ul className="mt-1.5 space-y-0.5">
+            {a.urgencyReasons.map((reason) => (
+              <li key={reason} className="flex items-center gap-1.5 text-sm text-terracotta-700">
+                <span aria-hidden className="h-1 w-1 rounded-full bg-current" />{reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div>
         <h3 className="mb-2 text-sm font-semibold text-ink-800">Component scores</h3>
@@ -45,7 +76,10 @@ export function RiskExplanation({ a }: { a: RiskAssessment }) {
                   <span className="font-medium text-ink-900">{f.label}</span>
                   <span className="text-xs tabular-nums text-graphite-500">+{f.points}</span>
                 </div>
-                <div className="text-xs text-graphite-500">{f.evidence} · {DIMENSION_LABELS[f.dimension]}</div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-graphite-500">
+                  <span>{f.evidence} · {DIMENSION_LABELS[f.dimension]}</span>
+                  <SourceBadge source={driverSource(f)} />
+                </div>
               </li>
             ))}
           </ul>

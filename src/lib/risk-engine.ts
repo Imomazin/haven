@@ -168,6 +168,41 @@ function protectiveFactors(p: PropertySignals, h: HouseholdSignals): string[] {
   return out;
 }
 
+/**
+ * Response urgency is deliberately separate from the overall risk band. The band
+ * reflects slow-moving, structural risk; urgency reflects how fast a human needs
+ * to respond. An acute signal — a cold home with a vulnerable occupant, damp with
+ * children present — can warrant an Immediate response even when structural risk
+ * is Low. This helper returns that decision together with the reasons, so the UI
+ * can explain why urgency outranks the band instead of looking contradictory.
+ */
+export function computeUrgency(
+  overallScore: number,
+  p: Pick<PropertySignals, "indoorWinterTempC" | "indoorHumidityPct">,
+  h: Pick<HouseholdSignals, "childrenUnder5" | "adultsOver65" | "childrenPresent" | "healthVulnerability" | "fuelPovertyIndicator" | "energyUsePattern">,
+): { urgencyScore: number; urgency: RiskAssessment["urgency"]; responseDueDays: number; reasons: string[]; escalated: boolean } {
+  let urgencyScore = overallScore;
+  const reasons: string[] = [];
+  if (p.indoorWinterTempC != null && p.indoorWinterTempC < 16 && (h.childrenUnder5 > 0 || h.adultsOver65 > 0 || h.healthVulnerability !== "none")) {
+    urgencyScore = Math.max(urgencyScore, 85);
+    const who = h.childrenUnder5 > 0 ? "young children" : h.adultsOver65 > 0 ? "an older resident" : "a vulnerable occupant";
+    reasons.push(`Cold home (${p.indoorWinterTempC}°C) with ${who}`);
+  }
+  if (p.indoorHumidityPct != null && p.indoorHumidityPct > 70 && h.childrenPresent) {
+    urgencyScore = Math.max(urgencyScore, 80);
+    reasons.push(`Damp risk (${p.indoorHumidityPct}% humidity) with children present`);
+  }
+  if (h.fuelPovertyIndicator === "in_fuel_poverty" && h.energyUsePattern === "under_heating") {
+    urgencyScore = Math.max(urgencyScore, 75);
+    reasons.push("Fuel poverty with under-heating");
+  }
+  urgencyScore = clamp(urgencyScore);
+  const { category: urgency, responseDueDays } = urgencyForScore(urgencyScore);
+  // Escalated only when an acute signal pushed urgency genuinely above structural risk.
+  const escalated = reasons.length > 0 && urgencyScore > overallScore + 8;
+  return { urgencyScore, urgency, responseDueDays, reasons: escalated ? reasons : [], escalated };
+}
+
 export function assessRisk(input: RiskInput): RiskAssessment {
   const { property: p, household: h } = input;
 
@@ -205,18 +240,8 @@ export function assessRisk(input: RiskInput): RiskAssessment {
   const { score: confidenceScore, missing } = computeConfidence(p);
 
   // Urgency: overall score, escalated by acute vulnerability + environmental combos.
-  let urgencyScore = overallScore;
-  if (p.indoorWinterTempC != null && p.indoorWinterTempC < 16 && (h.childrenUnder5 > 0 || h.adultsOver65 > 0 || h.healthVulnerability !== "none")) {
-    urgencyScore = Math.max(urgencyScore, 85);
-  }
-  if (p.indoorHumidityPct != null && p.indoorHumidityPct > 70 && h.childrenPresent) {
-    urgencyScore = Math.max(urgencyScore, 80);
-  }
-  if (h.fuelPovertyIndicator === "in_fuel_poverty" && h.energyUsePattern === "under_heating") {
-    urgencyScore = Math.max(urgencyScore, 75);
-  }
-  urgencyScore = clamp(urgencyScore);
-  const { category: urgency, responseDueDays } = urgencyForScore(urgencyScore);
+  const { urgencyScore, urgency, responseDueDays, reasons: urgencyReasons, escalated: urgencyEscalated } =
+    computeUrgency(overallScore, p, h);
 
   return {
     overallScore,
@@ -230,6 +255,8 @@ export function assessRisk(input: RiskInput): RiskAssessment {
     confidence: confidenceForScore(confidenceScore),
     urgencyScore,
     urgency,
+    urgencyReasons,
+    urgencyEscalated,
     primaryRisk,
     secondaryRisk,
     responseDueDays,

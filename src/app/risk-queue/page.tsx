@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getRiskQueue, getFilterOptions, getPortfolioStats } from "@/db/queries";
 import { PageHeader, Table, EmptyState } from "@/components/ui";
-import { RiskBadge, UrgencyBadge, ConfidenceBadge, ReviewBadge } from "@/components/severity";
+import { RiskBadge, UrgencyBadge, ConfidenceBadge, ReviewBadge, EscalationNote } from "@/components/severity";
 import { label, formatDate } from "@/lib/format";
 import { RISK_BANDS } from "@/lib/types";
 import { openCaseForHousehold } from "@/app/actions";
@@ -101,7 +101,7 @@ export default async function RiskQueuePage({ searchParams }: { searchParams: Pr
                   <td className="td"><RiskBadge band={r.band} score={r.overallScore} /><div className="mt-1"><ReviewBadge status={r.reviewStatus} /></div></td>
                   <td className="td"><div className="text-ink-900">{label(r.primaryRisk)}</div>{r.secondaryRisk && <div className="text-xs text-graphite-500">then {label(r.secondaryRisk)}</div>}</td>
                   <td className="td"><ConfidenceBadge confidence={r.confidence} /></td>
-                  <td className="td"><UrgencyBadge urgency={r.urgency} /></td>
+                  <td className="td"><UrgencyBadge urgency={r.urgency} escalated={r.urgencyEscalated} />{r.urgencyEscalated && r.urgencyReason && <div className="mt-1 max-w-[12rem]"><EscalationNote reason={r.urgencyReason} /></div>}</td>
                   <td className="td">{r.ownerTeam ? (<><div className="text-sm">{r.ownerTeam}</div><div className="text-xs text-graphite-500">{r.ownerName ?? "Unassigned"}</div></>) : <span className="text-graphite-400">—</span>}</td>
                   <td className="td">{r.responseDueAt ? (<span className={overdue ? "font-medium text-risk-critical-700" : "text-graphite-700"}>{formatDate(r.responseDueAt)}{overdue && <span className="block text-xs">overdue</span>}</span>) : "—"}</td>
                   <td className="td">

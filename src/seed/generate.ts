@@ -404,8 +404,8 @@ const STORY_TITLES = [
 
 export function buildDataset(seed = 42): Dataset {
   const rng = new Rng(seed);
-  const N_PROPERTIES = 55;
-  const N_HOUSEHOLDS = 45;
+  const N_PROPERTIES = 164;
+  const N_HOUSEHOLDS = 128;
 
   const properties: PropertyRow[] = [];
   for (let i = 0; i < N_PROPERTIES; i++) properties.push(buildProperty(i, rng));
@@ -455,7 +455,7 @@ export function buildDataset(seed = 42): Dataset {
   );
   const caseHouseholdIds = new Set<number>([1, 2, 3]);
   for (const h of ranked) {
-    if (caseHouseholdIds.size >= 26) break;
+    if (caseHouseholdIds.size >= 74) break;
     caseHouseholdIds.add(h.id);
   }
 

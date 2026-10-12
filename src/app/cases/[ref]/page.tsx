@@ -8,9 +8,10 @@ import { RiskExplanation } from "@/components/risk-explanation";
 import { RiskBadge, StatusPill, UrgencyBadge } from "@/components/severity";
 import { label, formatDate, formatDateTime, daysBetween } from "@/lib/format";
 import { computeResponseSchedule } from "@/lib/response-rules";
+import { CASE_WORKFLOW, stageForStatus, agencyForType } from "@/lib/places";
 import {
   assignCase, startCase, addCaseNote, escalateCase, updateInterventionStatus,
-  recordOutcome, runFollowUpAssessment, closeCase, reopenCase,
+  recordOutcome, runFollowUpAssessment, closeCase, reopenCase, raiseRepair, notifyResident,
 } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,7 @@ export default async function CaseDetail({ params }: { params: Promise<{ ref: st
   const overdue = c.responseDueAt && new Date(c.responseDueAt) < new Date() && c.status !== "closed";
   const change = c.followupRiskScore != null && c.openingRiskScore != null ? c.openingRiskScore - c.followupRiskScore : null;
   const nextStep = recs[0];
+  const stage = stageForStatus(c.status, c.outcome);
 
   return (
     <div>
@@ -40,7 +42,7 @@ export default async function CaseDetail({ params }: { params: Promise<{ ref: st
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <StatusPill status={c.status} />
               <RiskBadge band={c.currentBand ?? assessment.band} score={c.currentRiskScore ?? assessment.overallScore} />
-              <UrgencyBadge urgency={assessment.urgency} />
+              <UrgencyBadge urgency={assessment.urgency} escalated={assessment.urgencyEscalated} />
               <span className="text-sm text-graphite-500">
                 <Link href={`/properties/${p.ref}`} className="text-ink-700 hover:underline">{p.ref}</Link> · <Link href={`/households/${h.ref}`} className="text-ink-700 hover:underline">{h.ref}</Link> · {p.locality}
               </span>
@@ -52,6 +54,24 @@ export default async function CaseDetail({ params }: { params: Promise<{ ref: st
             <div className="col-span-2 border-t border-graphite-200 pt-2"><dt className="field-label">Recommended next step</dt><dd className="mt-0.5 font-medium text-ink-900">{nextStep ? nextStep.label : "Monitor"}</dd>{nextStep && <dd className="text-xs text-graphite-500">{nextStep.team}</dd>}</div>
           </dl>
         </div>
+      </div>
+
+      {/* Workflow stepper */}
+      <div className="mb-5 overflow-x-auto scroll-y rounded-lg border border-graphite-200/70 bg-white p-3 shadow-subtle">
+        <ol className="flex min-w-max items-center gap-1.5">
+          {CASE_WORKFLOW.map((s, i) => {
+            const done = i < stage, current = i === stage;
+            return (
+              <li key={s} className="flex items-center gap-1.5">
+                <span className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium ${current ? "bg-ink-800 text-white" : done ? "text-ink-700" : "text-graphite-400"}`}>
+                  <span aria-hidden className={`grid h-4 w-4 place-items-center rounded-full text-[9px] ${current ? "bg-terracotta-400 text-ink-900" : done ? "bg-sage-500 text-white" : "border border-graphite-300"}`}>{done ? "✓" : i + 1}</span>
+                  {s}
+                </span>
+                {i < CASE_WORKFLOW.length - 1 && <span aria-hidden className={`h-px w-4 ${done ? "bg-sage-400" : "bg-graphite-200"}`} />}
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-3">
@@ -97,7 +117,7 @@ export default async function CaseDetail({ params }: { params: Promise<{ ref: st
                   </div>
                   <p className="mt-1 text-sm text-graphite-600">{it.reason}</p>
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-graphite-500">
-                    <span>Team: {it.team}</span><span>Owner: {it.ownerName ?? "—"}</span><span>Target: {formatDate(it.targetDate)}</span>
+                    <span>Team: {it.team}</span><span>Partner: {agencyForType(it.type)}</span><span>Owner: {it.ownerName ?? "—"}</span><span>Target: {formatDate(it.targetDate)}</span>
                     {it.completedAt && <span>Completed: {formatDate(it.completedAt)}</span>}
                     {it.followUpDate && <span>Follow-up: {formatDate(it.followUpDate)}</span>}
                   </div>
@@ -196,6 +216,31 @@ export default async function CaseDetail({ params }: { params: Promise<{ ref: st
                 <input type="hidden" name="ref" value={c.ref} />
                 <textarea name="body" placeholder="Add a note…" rows={2} className="input w-full py-1.5 text-sm" />
                 <button className="btn-primary w-full py-1.5 text-sm">Add note</button>
+              </form>
+            </div>
+          </Card>
+
+          <Card>
+            <SectionTitle sub="Act through connected systems (demo) — each records an audit event">Connected actions</SectionTitle>
+            <div className="space-y-3">
+              <form action={raiseRepair} className="space-y-1.5 rounded-lg border border-graphite-200/70 bg-limestone-50 p-2.5">
+                <div className="flex items-center justify-between"><span className="field-label">Raise repair</span><span className="rounded border border-terracotta-200 bg-terracotta-50 px-1.5 py-0.5 text-[10px] font-medium text-terracotta-700">Plentific · demo</span></div>
+                <input type="hidden" name="ref" value={c.ref} />
+                <input type="hidden" name="propertyRef" value={p.ref} />
+                <select name="category" className="input w-full py-1.5 text-sm" defaultValue="Damp & mould">
+                  {["Damp & mould", "Heating", "Ventilation", "Roofing", "Plumbing"].map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+                <input name="description" placeholder="Repair description (optional)" className="input w-full py-1.5 text-sm" />
+                <button className="btn-secondary w-full py-1.5 text-sm">Raise work order</button>
+              </form>
+              <form action={notifyResident} className="space-y-1.5 rounded-lg border border-graphite-200/70 bg-limestone-50 p-2.5">
+                <div className="flex items-center justify-between"><span className="field-label">Notify resident</span><span className="rounded border border-terracotta-200 bg-terracotta-50 px-1.5 py-0.5 text-[10px] font-medium text-terracotta-700">GOV.UK Notify · demo</span></div>
+                <input type="hidden" name="ref" value={c.ref} />
+                <select name="channel" className="input w-full py-1.5 text-sm" defaultValue="SMS">
+                  {["SMS", "Email", "Letter"].map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+                <input name="message" placeholder="Message to resident" className="input w-full py-1.5 text-sm" />
+                <button className="btn-secondary w-full py-1.5 text-sm">Send message</button>
               </form>
             </div>
           </Card>

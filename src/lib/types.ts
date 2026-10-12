@@ -181,6 +181,10 @@ export interface RiskAssessment {
   confidence: ConfidenceCategory;
   urgencyScore: number; // 0-100
   urgency: UrgencyCategory;
+  // Acute signals that lifted response urgency above the overall band (e.g. a
+  // cold home with a vulnerable occupant). Empty when urgency tracks the band.
+  urgencyReasons: string[];
+  urgencyEscalated: boolean;
   primaryRisk: RiskDimension;
   secondaryRisk: RiskDimension | null;
   responseDueDays: number;
