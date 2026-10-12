@@ -67,7 +67,7 @@ export default async function GovernancePage() {
         </Card>
 
         <Card className="lg:col-span-3">
-          <SectionTitle sub="Most recent recorded actions" action={<Link href="/" className="text-xs font-medium text-ink-700 hover:underline">Overview →</Link>}>Audit trail</SectionTitle>
+          <SectionTitle sub="Most recent recorded actions" action={<Link href="/portfolio" className="text-xs font-medium text-ink-700 hover:underline">Overview →</Link>}>Audit trail</SectionTitle>
           <div className="max-h-[28rem] overflow-y-auto scroll-y">
             <Table>
               <thead><tr><th className="th">When</th><th className="th">Entity</th><th className="th">Action</th><th className="th">Actor</th></tr></thead>

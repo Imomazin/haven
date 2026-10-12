@@ -1,184 +1,256 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { getPortfolioStats, getRiskQueue, getRecentAudit, getPlaces, getInterventionsList } from "@/db/queries";
-import { getRole, ROLE_COOKIE, roleLinks } from "@/lib/roles";
-import { agencyForType } from "@/lib/places";
-import { Card, SectionTitle, SegmentBar } from "@/components/ui";
-import { PlaceMap } from "@/components/place-map";
-import { RiskBadge, UrgencyBadge, StatusPill, EscalationNote } from "@/components/severity";
-import { label, formatDate } from "@/lib/format";
+import { getPortfolioStats } from "@/db/queries";
 import { ecosystemSummary, CONNECTORS } from "@/integrations/registry";
-import { HealthDot } from "@/components/integration";
+import { Reveal } from "@/components/reveal";
+import { Skyline, PurposeMotif } from "@/components/landing-visuals";
+import { SystemMap } from "@/components/system-map";
 
 export const dynamic = "force-dynamic";
 
-const DOT: Record<string, string> = { Critical: "bg-risk-critical-500", High: "bg-risk-high-500", Moderate: "bg-risk-moderate-500", Low: "bg-risk-low-500" };
+export const metadata = {
+  title: "Haven — Housing intelligence for earlier intervention",
+  description: "See housing risk earlier. Understand people and place. Coordinate intervention before crisis. A housing intelligence and intervention layer across a landlord's existing systems.",
+};
 
-export default async function PortfolioPage() {
-  const [stats, queue, audit, places, activeInts, jar] = await Promise.all([
-    getPortfolioStats(), getRiskQueue({}), getRecentAudit(6), getPlaces(), getInterventionsList({ status: "in_progress" }), cookies(),
-  ]);
-  const role = getRole(jar.get(ROLE_COOKIE)?.value);
-  const links = roleLinks(role);
-  const bc = stats.bandCounts;
-  const urgent = queue.filter((r) => r.urgency === "Immediate").length;
-  const priority = queue.slice(0, 7);
-  const top = queue[0];
+const PURPOSE = [
+  { kind: "see" as const, title: "See", line: "Where risk is emerging — across every home, household and neighbourhood." },
+  { kind: "understand" as const, title: "Understand", line: "What is driving it — fabric, environment, finances and vulnerability, assembled from your systems." },
+  { kind: "act" as const, title: "Act", line: "Coordinate the right intervention with the right partner, before crisis." },
+  { kind: "track" as const, title: "Track", line: "Whether conditions actually improve — outcomes measured, not assumed." },
+];
+
+const SCENARIOS = [
+  {
+    tag: "Cold home", tone: "#cc7249",
+    steps: [
+      ["Signal", "Switchee reports 12.8°C internal temperature"],
+      ["Context", "Elderly resident, under-heating despite adequate fabric"],
+      ["Risk", "Low structural band, but urgency escalated to Immediate"],
+      ["Intervention", "Heating support + energy advice referral"],
+      ["Partner", "Home Energy Scotland engaged via Notify"],
+      ["Outcome", "Temperature recovered; risk reduced at follow-up"],
+    ],
+  },
+  {
+    tag: "Damp & mould", tone: "#6a8f87",
+    steps: [
+      ["Signal", "Aico HomeLINK flags 81% humidity with children present"],
+      ["Context", "Repeat damp repairs on file from Civica Cx"],
+      ["Risk", "High environmental and recurrence scores"],
+      ["Intervention", "Damp investigation + ventilation works"],
+      ["Partner", "Cloch Repairs Service work order via Plentific"],
+      ["Outcome", "Mould treated; monitoring confirms improvement"],
+    ],
+  },
+  {
+    tag: "Fuel poverty", tone: "#b4703f",
+    steps: [
+      ["Signal", "Household flagged in fuel poverty, under-heating"],
+      ["Context", "High income risk, EPC F from the energy register"],
+      ["Risk", "Fuel poverty primary driver, elevated overall"],
+      ["Intervention", "Income maximisation + fabric improvement"],
+      ["Partner", "Financial Inclusion Partnership referral"],
+      ["Outcome", "Benefit uptake secured; affordability improved"],
+    ],
+  },
+];
+
+const PLATFORM = [
+  { href: "/portfolio", name: "Portfolio", blurb: "Situation room across the whole estate" },
+  { href: "/place", name: "Place", blurb: "Neighbourhood risk concentration" },
+  { href: "/households", name: "Household 360", blurb: "Human-centred case dossier" },
+  { href: "/properties", name: "Property 360", blurb: "Asset & condition intelligence" },
+  { href: "/risk-queue", name: "Risk triage", blurb: "Prioritised, explainable queue" },
+  { href: "/cases", name: "Cases", blurb: "Coordinated intervention workflow" },
+  { href: "/interventions", name: "Interventions", blurb: "Programme & outcomes" },
+  { href: "/ecosystem", name: "Ecosystem", blurb: "The connected systems fabric" },
+  { href: "/analytics", name: "Insights", blurb: "Executive intelligence" },
+];
+
+export default async function Landing() {
+  const stats = await getPortfolioStats();
   const eco = ecosystemSummary();
-  const liveFeeds = CONNECTORS.filter((c) => c.state !== "not_configured").sort((a, b) => b.sync.recordsProcessed - a.sync.recordsProcessed).slice(0, 5);
+  const bc = stats.bandCounts;
+  const attention = bc.Critical + bc.High;
+  const connected = eco.total - eco.notConfigured;
+
+  const ribbon = [
+    { v: stats.propertiesMonitored, label: "homes monitored" },
+    { v: attention, label: "households need attention" },
+    { v: stats.openInterventions, label: "active interventions" },
+    { v: stats.casesWorsening, label: "worsening risk signals" },
+    { v: connected, label: "partner systems connected" },
+  ];
+
+  const ecoNames = CONNECTORS.filter((c) => c.state !== "not_configured").map((c) => c.name);
 
   return (
-    <div className="space-y-6">
-      {/* Situation band */}
-      <section className="overflow-hidden rounded-xl bg-ink-900 text-white">
-        <div className="grid gap-6 p-6 lg:grid-cols-[1.4fr_1fr] lg:p-8">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-terracotta-300">Portfolio · Inverclyde</p>
-            <h1 className="mt-2 font-display text-[28px] font-semibold leading-tight">Housing situation room</h1>
-            <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-100">
-              {stats.householdsRepresented} households across {places.length} neighbourhoods. {bc.Critical} critical and {bc.High} high‑risk
-              need attention now; {stats.overdueActions} action{stats.overdueActions === 1 ? "" : "s"} overdue.
-            </p>
-            {top && (
-              <div className="mt-4 inline-flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-200">Current priority</span>
-                <Link href={top.caseRef ? `/cases/${top.caseRef}` : `/households/${top.householdRef}`} className="text-sm font-medium text-white hover:underline">
-                  {top.propertyRef} · {top.locality}
-                </Link>
-                <RiskBadge band={top.band} score={top.overallScore} />
-                <UrgencyBadge urgency={top.urgency} escalated={top.urgencyEscalated} />
-                {top.urgencyEscalated && top.urgencyReason && (
-                  <span className="w-full text-xs text-terracotta-200 sm:w-auto">Why now: {top.urgencyReason}</span>
-                )}
-              </div>
-            )}
+    <div className="bg-ink-950 text-white">
+      {/* Landing header */}
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-ink-950/80 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-[1180px] items-center justify-between px-5 sm:px-8">
+          <div className="flex items-center gap-2.5">
+            <span aria-hidden className="grid h-8 w-8 place-items-center rounded-md border border-terracotta-400/40 bg-terracotta-500 font-display text-lg font-semibold text-white">H</span>
+            <span className="font-display text-lg font-semibold tracking-tight">Haven</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 self-start">
-            {[["Urgent", urgent, "needs action now"], ["Open cases", stats.casesOpen, `${stats.openInterventions} interventions`], ["Overdue", stats.overdueActions, "past response window"], ["Improving", stats.casesImproving, "risk reduced"]].map(([k, v, h]) => (
-              <div key={k as string} className="rounded-lg border border-white/10 bg-white/5 p-3">
-                <div className="text-[11px] uppercase tracking-wider text-ink-200">{k}</div>
-                <div className="mt-1 font-display text-2xl font-semibold tabular-nums">{v as number}</div>
-                <div className="text-[11px] text-ink-300">{h}</div>
+          <nav className="flex items-center gap-1.5 sm:gap-3">
+            <a href="#platform" className="hidden rounded-md px-3 py-1.5 text-sm text-ink-100/80 hover:text-white sm:block">Platform</a>
+            <a href="#ecosystem" className="hidden rounded-md px-3 py-1.5 text-sm text-ink-100/80 hover:text-white sm:block">Ecosystem</a>
+            <Link href="/portfolio" className="rounded-md bg-terracotta-500 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-terracotta-600">Enter HAVEN</Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="relative overflow-hidden border-b border-white/10">
+        <div className="mx-auto grid max-w-[1180px] items-center gap-10 px-5 py-16 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+          <div>
+            <Reveal className="section-eyebrow text-terracotta-300">Housing intelligence platform</Reveal>
+            <Reveal delay={1}>
+              <h1 className="mt-4 display-hero text-5xl text-white sm:text-6xl lg:text-[76px]">Housing intelligence<br />for earlier<br /><span className="text-terracotta-300">intervention.</span></h1>
+            </Reveal>
+            <Reveal delay={2}>
+              <p className="mt-6 max-w-lg text-lg leading-relaxed text-ink-100">
+                See housing risk earlier. Understand people and place. Coordinate intervention before crisis — across the systems you already run.
+              </p>
+            </Reveal>
+            <Reveal delay={3} className="mt-8 flex flex-wrap items-center gap-3">
+              <Link href="/portfolio" className="rounded-lg bg-terracotta-500 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-terracotta-600">Enter HAVEN →</Link>
+              <Link href="/ecosystem" className="rounded-lg border border-white/20 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-white/10">Explore the ecosystem</Link>
+            </Reveal>
+          </div>
+          <Reveal delay={2} className="relative">
+            <div className="overflow-hidden rounded-2xl border border-white/10 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.6)]">
+              <Skyline className="h-auto w-full" />
+            </div>
+          </Reveal>
+        </div>
+
+        {/* Live portfolio ribbon */}
+        <div className="border-t border-white/10 bg-ink-900/60">
+          <div className="mx-auto flex max-w-[1180px] flex-wrap divide-white/10 px-5 sm:px-8 md:divide-x">
+            {ribbon.map((r, i) => (
+              <div key={i} className="flex min-w-[9rem] flex-1 items-baseline gap-2 py-4 md:px-6 md:first:pl-0">
+                <span className="display-xl text-3xl text-terracotta-300 tnum">{r.v}</span>
+                <span className="text-sm leading-tight text-ink-100">{r.label}</span>
               </div>
             ))}
           </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 border-t border-white/10 bg-ink-950/40 px-6 py-2.5 lg:px-8">
-          <span className="text-[11px] text-ink-300">For {role.label}:</span>
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} className="rounded border border-white/15 px-2 py-0.5 text-xs text-ink-100 hover:bg-white/10">{l.label}</Link>
-          ))}
         </div>
       </section>
 
-      {/* Place + concentration */}
-      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        <Card>
-          <SectionTitle sub="Risk by neighbourhood — select an area to triage" action={<Link href="/place" className="text-xs font-medium text-ink-700 hover:underline">All neighbourhoods →</Link>}>Where risk concentrates</SectionTitle>
-          <PlaceMap places={places} />
-        </Card>
-        <Card>
-          <SectionTitle sub="Worst-affected first">Neighbourhood priority</SectionTitle>
-          <ul className="divide-y divide-graphite-100">
-            {places.slice(0, 7).map((p) => (
-              <li key={p.locality} className="flex items-center gap-3 py-2">
-                <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${DOT[p.topBand]}`} aria-hidden />
-                <Link href={`/risk-queue?locality=${encodeURIComponent(p.locality)}`} className="min-w-0 flex-1 truncate text-sm font-medium text-ink-900 hover:underline">{p.locality}</Link>
-                <span className="text-xs text-graphite-500">{label(p.dominantRisk)}</span>
-                <span className="w-16 text-right text-xs tabular-nums text-graphite-600">{p.highCritical} H/C · {p.openCases} open</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </div>
-
-      {/* Priority households + active programme */}
-      <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
-        <Card>
-          <SectionTitle sub="Highest urgency across the portfolio" action={<Link href="/risk-queue" className="text-xs font-medium text-ink-700 hover:underline">Open queue →</Link>}>Households needing intervention</SectionTitle>
-          <ul className="divide-y divide-graphite-100">
-            {priority.map((r) => (
-              <li key={r.householdRef} className="flex items-start gap-3 py-2.5">
-                <RiskBadge band={r.band} score={r.overallScore} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium text-ink-900"><Link href={`/properties/${r.propertyRef}`} className="hover:underline">{r.propertyRef}</Link> <span className="font-normal text-graphite-500">· {r.locality}</span></div>
-                  <div className="truncate text-xs text-graphite-500">{label(r.primaryRisk)} · {r.ownerName ?? "unassigned"}</div>
-                  {r.urgencyEscalated && r.urgencyReason && <EscalationNote reason={r.urgencyReason} className="mt-0.5" />}
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-1">
-                  <UrgencyBadge urgency={r.urgency} escalated={r.urgencyEscalated} />
-                  {r.caseRef && <Link href={`/cases/${r.caseRef}`} className="hidden text-xs font-medium text-ink-700 hover:underline sm:inline">{r.caseRef}</Link>}
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
-        <div className="space-y-5">
-          <Card>
-            <SectionTitle sub="Risk band distribution">Risk movement</SectionTitle>
-            <SegmentBar segments={[{ label: "Critical", value: bc.Critical, className: "bg-risk-critical-500" }, { label: "High", value: bc.High, className: "bg-risk-high-500" }, { label: "Moderate", value: bc.Moderate, className: "bg-risk-moderate-500" }, { label: "Low", value: bc.Low, className: "bg-risk-low-500" }]} />
-            <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-              <div><div className="text-xs text-graphite-500">Improving</div><div className="font-semibold text-risk-low-700">{stats.casesImproving}</div></div>
-              <div><div className="text-xs text-graphite-500">Worsening</div><div className={`font-semibold ${stats.casesWorsening > 0 ? "text-risk-high-700" : "text-graphite-500"}`}>{stats.casesWorsening}</div></div>
-              <div><div className="text-xs text-graphite-500">Safeguarding</div><div className="font-semibold text-ink-900">{stats.vulnerabilityCount}</div></div>
-              <div><div className="text-xs text-graphite-500">Avg resolution</div><div className="font-semibold text-ink-900">{stats.avgResolutionDays ?? "—"}d</div></div>
-            </div>
-          </Card>
-          <Card>
-            <SectionTitle sub="In delivery now" action={<Link href="/interventions?status=in_progress" className="text-xs font-medium text-ink-700 hover:underline">All →</Link>}>Active programme</SectionTitle>
-            {activeInts.length ? (
-              <ul className="space-y-2 text-sm">
-                {activeInts.slice(0, 5).map(({ i, caseRef }) => (
-                  <li key={i.id} className="flex items-center justify-between gap-2 border-b border-graphite-100 pb-1.5 last:border-0">
-                    <div className="min-w-0"><Link href={`/cases/${caseRef}`} className="font-medium text-ink-900 hover:underline">{i.label}</Link><div className="truncate text-xs text-graphite-500">{agencyForType(i.type)}</div></div>
-                    <StatusPill status={i.status} />
-                  </li>
-                ))}
-              </ul>
-            ) : <p className="text-sm text-graphite-400">No interventions in delivery.</p>}
-          </Card>
-        </div>
-      </div>
-
-      {/* Ecosystem coverage */}
-      <Card>
-        <SectionTitle sub="Signals flowing in from connected systems" action={<Link href="/ecosystem" className="text-xs font-medium text-ink-700 hover:underline">Integration centre →</Link>}>Live data feeds</SectionTitle>
-        <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr]">
-          <div className="grid grid-cols-2 gap-3 self-start sm:grid-cols-4 lg:grid-cols-2">
-            {[["Connected systems", `${eco.total - eco.notConfigured}/${eco.total}`, `${eco.categories} categories`], ["Records processed", eco.recordsProcessed.toLocaleString(), `${eco.recordsFailed} failed`], ["Avg uptime", `${eco.avgUptime}%`, `${eco.webhooksActive} webhooks`], ["Ready to configure", eco.notConfigured, "adapters available"]].map(([k, v, h]) => (
-              <div key={k as string} className="rounded-lg border border-graphite-200/70 bg-limestone-50 p-3">
-                <p className="field-label">{k}</p>
-                <p className="mt-0.5 font-display text-xl font-semibold text-ink-900">{v}</p>
-                <p className="text-[11px] text-graphite-500">{h}</p>
-              </div>
+      {/* Purpose: SEE / UNDERSTAND / ACT / TRACK */}
+      <section className="border-b border-white/10 bg-limestone-50 text-graphite-900">
+        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-8 lg:py-20">
+          <Reveal className="section-eyebrow">The Haven method</Reveal>
+          <Reveal delay={1}><h2 className="mt-3 display-xl text-3xl text-ink-900 sm:text-4xl">From signal to outcome</h2></Reveal>
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {PURPOSE.map((p, i) => (
+              <Reveal key={p.kind} delay={((i % 4) + 1) as 1 | 2 | 3 | 4} className="rounded-xl border border-graphite-200/70 bg-white p-5 hover-lift">
+                <span className="text-terracotta-600">
+                  <PurposeMotif kind={p.kind} />
+                </span>
+                <h3 className="mt-4 font-display text-xl font-semibold text-ink-900">{p.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-graphite-600">{p.line}</p>
+              </Reveal>
             ))}
           </div>
-          <ul className="divide-y divide-graphite-100">
-            {liveFeeds.map((c) => (
-              <li key={c.slug} className="flex items-center gap-3 py-2">
-                <HealthDot health={c.sync.health} label={false} />
-                <Link href={`/ecosystem/${c.slug}`} className="min-w-0 flex-1 truncate text-sm font-medium text-ink-900 hover:underline">{c.name}</Link>
-                <span className="hidden text-xs text-graphite-500 sm:inline">{c.provenanceLabel}</span>
-                <span className="tabular-nums text-sm text-ink-800">{c.sync.recordsProcessed.toLocaleString()}</span>
-                <span className="text-xs text-graphite-400">records</span>
-              </li>
-            ))}
-          </ul>
         </div>
-      </Card>
+      </section>
 
-      {/* Recent activity */}
-      <Card>
-        <SectionTitle sub="Across all cases" action={<Link href="/governance" className="text-xs font-medium text-ink-700 hover:underline">Audit trail →</Link>}>Recent case activity</SectionTitle>
-        <ul className="grid gap-x-8 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
-          {audit.map((e) => (
-            <li key={e.id} className="flex gap-2.5 text-sm">
-              <span aria-hidden className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-terracotta-500" />
-              <div className="min-w-0"><div className="truncate text-ink-900">{label(e.action)} <span className="text-graphite-400">· {e.entityRef}</span></div><div className="text-xs text-graphite-500">{formatDate(e.createdAt)} · {e.actor}</div></div>
-            </li>
-          ))}
-        </ul>
-      </Card>
+      {/* Housing system fabric */}
+      <section className="border-b border-white/10 bg-ink-900">
+        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-8 lg:py-20">
+          <Reveal className="section-eyebrow text-terracotta-300">One intelligence fabric</Reveal>
+          <Reveal delay={1}><h2 className="mt-3 display-xl text-3xl text-white sm:text-4xl">Homes, households and place — woven together</h2></Reveal>
+          <Reveal delay={2}><p className="mt-3 max-w-2xl text-ink-100">Haven brings property condition, repairs, energy, sensors, financial vulnerability, public data, case management and community services into one canonical, HACT-aligned model — reconciled by UPRN.</p></Reveal>
+          <Reveal delay={2} className="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-[#f7f9fa] p-4">
+            <SystemMap />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Scenarios */}
+      <section className="border-b border-white/10 bg-limestone-50 text-graphite-900">
+        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-8 lg:py-20">
+          <Reveal className="section-eyebrow">What it looks like in practice</Reveal>
+          <Reveal delay={1}><h2 className="mt-3 display-xl text-3xl text-ink-900 sm:text-4xl">Three homes, three journeys</h2></Reveal>
+          <div className="mt-10 grid gap-6 lg:grid-cols-3">
+            {SCENARIOS.map((s, i) => (
+              <Reveal key={s.tag} delay={((i % 3) + 1) as 1 | 2 | 3} className="overflow-hidden rounded-xl border border-graphite-200/70 bg-white hover-lift">
+                <div className="flex items-center justify-between px-5 py-3" style={{ background: s.tone + "14" }}>
+                  <span className="font-display text-lg font-semibold text-ink-900">{s.tag}</span>
+                  <span aria-hidden className="h-2.5 w-2.5 rounded-full" style={{ background: s.tone }} />
+                </div>
+                <ol className="relative space-y-3 border-l border-graphite-200 p-5 pl-7">
+                  {s.steps.map(([k, v], j) => (
+                    <li key={j} className="relative">
+                      <span aria-hidden className="absolute -left-[1.42rem] top-1 h-2 w-2 rounded-full border-2 border-white" style={{ background: s.tone }} />
+                      <p className="field-label" style={{ color: s.tone }}>{k}</p>
+                      <p className="text-sm text-ink-800">{v}</p>
+                    </li>
+                  ))}
+                </ol>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Platform preview */}
+      <section id="platform" className="border-b border-white/10 bg-white text-graphite-900">
+        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-8 lg:py-20">
+          <Reveal className="section-eyebrow">Inside Haven</Reveal>
+          <Reveal delay={1}><h2 className="mt-3 display-xl text-3xl text-ink-900 sm:text-4xl">A platform, not a dashboard</h2></Reveal>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {PLATFORM.map((p, i) => (
+              <Reveal key={p.href} delay={((i % 3) + 1) as 1 | 2 | 3}>
+                <Link href={p.href} className="group flex h-full flex-col justify-between rounded-xl border border-graphite-200/70 bg-limestone-50 p-5 hover-lift">
+                  <div>
+                    <h3 className="font-display text-lg font-semibold text-ink-900">{p.name}</h3>
+                    <p className="mt-1 text-sm text-graphite-600">{p.blurb}</p>
+                  </div>
+                  <span className="mt-4 text-sm font-medium text-terracotta-600">Open {p.name} →</span>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Ecosystem */}
+      <section id="ecosystem" className="border-b border-white/10 bg-ink-900">
+        <div className="mx-auto max-w-[1180px] px-5 py-16 sm:px-8 lg:py-20">
+          <Reveal className="section-eyebrow text-terracotta-300">The connected estate</Reveal>
+          <Reveal delay={1}><h2 className="mt-3 display-xl text-3xl text-white sm:text-4xl">{eco.total} connectors across {eco.categories} domains</h2></Reveal>
+          <Reveal delay={2}><p className="mt-3 max-w-2xl text-ink-100">Housing management, repairs, IoT sensors, energy, public data, communications, documents and analytics — each labelled honestly by its real connection state.</p></Reveal>
+          <Reveal delay={2} className="mt-8 flex flex-wrap gap-2">
+            {ecoNames.map((n) => (
+              <span key={n} className="rounded-full border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-ink-100">{n}</span>
+            ))}
+          </Reveal>
+          <Reveal delay={3} className="mt-8">
+            <Link href="/ecosystem" className="inline-flex rounded-lg border border-white/20 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-white/10">Explore HAVEN ecosystem →</Link>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="bg-ink-950">
+        <div className="mx-auto max-w-[1180px] px-5 py-20 text-center sm:px-8 lg:py-28">
+          <Reveal>
+            <h2 className="display-hero mx-auto max-w-3xl text-4xl text-white sm:text-5xl lg:text-[58px]">From fragmented housing data to coordinated intervention.</h2>
+          </Reveal>
+          <Reveal delay={1} className="mt-10">
+            <Link href="/portfolio" className="inline-flex rounded-lg bg-terracotta-500 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-terracotta-600">Enter HAVEN →</Link>
+          </Reveal>
+        </div>
+        <footer className="border-t border-white/10">
+          <div className="mx-auto max-w-[1180px] px-5 py-8 text-xs leading-relaxed text-ink-300 sm:px-8">
+            Haven · CivTech 12.6 demonstrator with Cloch Housing Association · Ambidexters Ltd × The DataKirk SCIO. All data is synthetic. Not a clinical decision system. Integrations are simulated and run against synthetic fixtures; no live customer credentials are configured. No endorsement by Cloch or CivTech implied.
+          </div>
+        </footer>
+      </section>
     </div>
   );
 }

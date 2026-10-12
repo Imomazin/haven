@@ -9,7 +9,7 @@ type Item = { href: string; label: string; match?: string[] };
 
 // Primary global navigation. Reference/secondary destinations live under "More".
 const PRIMARY: Item[] = [
-  { href: "/", label: "Portfolio" },
+  { href: "/portfolio", label: "Portfolio" },
   { href: "/place", label: "Places" },
   { href: "/properties", label: "Homes" },
   { href: "/households", label: "Households" },
@@ -53,12 +53,15 @@ export function TopNav({ role }: { role: string }) {
   const moreActive = MORE.some((m) => isActive(pathname, m));
 
   const linkCls = (active: boolean) =>
-    `rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${active ? "bg-white/12 text-white" : "text-ink-100/85 hover:bg-white/5 hover:text-white"}`;
+    `relative rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors ${active ? "text-white after:absolute after:inset-x-2.5 after:-bottom-[11px] after:h-0.5 after:rounded-full after:bg-terracotta-400" : "text-ink-100/80 hover:bg-white/5 hover:text-white"}`;
 
   return (
     <header className="sticky top-0 z-40 bg-ink-900">
-      <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-14 max-w-[1280px] items-center gap-3 px-4 sm:px-6">
         <Wordmark />
+        <span className="hidden items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] text-ink-100/80 xl:inline-flex">
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-sage-400" /> Inverclyde portfolio
+        </span>
 
         {/* Desktop nav */}
         <nav aria-label="Primary" className="ml-2 hidden flex-1 items-center gap-0.5 lg:flex">
