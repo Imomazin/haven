@@ -11,7 +11,7 @@ import { computeResponseSchedule } from "@/lib/response-rules";
 import { CASE_WORKFLOW, stageForStatus, agencyForType } from "@/lib/places";
 import {
   assignCase, startCase, addCaseNote, escalateCase, updateInterventionStatus,
-  recordOutcome, runFollowUpAssessment, closeCase, reopenCase,
+  recordOutcome, runFollowUpAssessment, closeCase, reopenCase, raiseRepair, notifyResident,
 } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
@@ -216,6 +216,31 @@ export default async function CaseDetail({ params }: { params: Promise<{ ref: st
                 <input type="hidden" name="ref" value={c.ref} />
                 <textarea name="body" placeholder="Add a note…" rows={2} className="input w-full py-1.5 text-sm" />
                 <button className="btn-primary w-full py-1.5 text-sm">Add note</button>
+              </form>
+            </div>
+          </Card>
+
+          <Card>
+            <SectionTitle sub="Act through connected systems (demo) — each records an audit event">Connected actions</SectionTitle>
+            <div className="space-y-3">
+              <form action={raiseRepair} className="space-y-1.5 rounded-lg border border-graphite-200/70 bg-limestone-50 p-2.5">
+                <div className="flex items-center justify-between"><span className="field-label">Raise repair</span><span className="rounded border border-terracotta-200 bg-terracotta-50 px-1.5 py-0.5 text-[10px] font-medium text-terracotta-700">Plentific · demo</span></div>
+                <input type="hidden" name="ref" value={c.ref} />
+                <input type="hidden" name="propertyRef" value={p.ref} />
+                <select name="category" className="input w-full py-1.5 text-sm" defaultValue="Damp & mould">
+                  {["Damp & mould", "Heating", "Ventilation", "Roofing", "Plumbing"].map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+                <input name="description" placeholder="Repair description (optional)" className="input w-full py-1.5 text-sm" />
+                <button className="btn-secondary w-full py-1.5 text-sm">Raise work order</button>
+              </form>
+              <form action={notifyResident} className="space-y-1.5 rounded-lg border border-graphite-200/70 bg-limestone-50 p-2.5">
+                <div className="flex items-center justify-between"><span className="field-label">Notify resident</span><span className="rounded border border-terracotta-200 bg-terracotta-50 px-1.5 py-0.5 text-[10px] font-medium text-terracotta-700">GOV.UK Notify · demo</span></div>
+                <input type="hidden" name="ref" value={c.ref} />
+                <select name="channel" className="input w-full py-1.5 text-sm" defaultValue="SMS">
+                  {["SMS", "Email", "Letter"].map((x) => <option key={x} value={x}>{x}</option>)}
+                </select>
+                <input name="message" placeholder="Message to resident" className="input w-full py-1.5 text-sm" />
+                <button className="btn-secondary w-full py-1.5 text-sm">Send message</button>
               </form>
             </div>
           </Card>

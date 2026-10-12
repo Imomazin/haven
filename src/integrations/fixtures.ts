@@ -133,6 +133,59 @@ export function uprnFor(propertyId: number): string {
   return String(906700000000 + propertyId * 37);
 }
 
+export interface Tenancy {
+  ref: string;
+  type: string;
+  startDate: string;
+  weeklyRentGbp: number;
+  source: "Civica Cx";
+}
+
+// Tenancy basics sourced from the HMS.
+export function tenancyFor(householdId: number, propertyType: string): Tenancy {
+  const r = rand(householdId * 613 + 11);
+  const types = ["Scottish Secure Tenancy", "Short Scottish Secure Tenancy"];
+  const yearsAgo = 1 + Math.floor(r() * 18);
+  const start = new Date(BASE - yearsAgo * 365 * DAY - Math.floor(r() * 200) * DAY);
+  const baseRent = propertyType.includes("flat") ? 78 : 96;
+  return {
+    ref: `TEN-${String(40000 + householdId * 17).slice(0, 5)}`,
+    type: types[householdId % 2 === 0 ? 0 : r() < 0.2 ? 1 : 0],
+    startDate: start.toISOString(),
+    weeklyRentGbp: Math.round(baseRent + r() * 34),
+    source: "Civica Cx",
+  };
+}
+
+export interface ContactEvent {
+  at: string;
+  channel: "SMS" | "Email" | "Call" | "Letter" | "Visit";
+  direction: "outbound" | "inbound";
+  subject: string;
+  source: "GOV.UK Notify" | "Twilio" | "Civica Cx" | "Salesforce";
+  outcome: string;
+}
+
+const CONTACTS: Omit<ContactEvent, "at">[] = [
+  { channel: "SMS", direction: "outbound", subject: "Appointment reminder — damp inspection", source: "GOV.UK Notify", outcome: "Delivered" },
+  { channel: "Call", direction: "outbound", subject: "Welfare check-in call", source: "Civica Cx", outcome: "Spoke with resident" },
+  { channel: "Email", direction: "outbound", subject: "Energy advice referral confirmation", source: "GOV.UK Notify", outcome: "Delivered" },
+  { channel: "SMS", direction: "inbound", subject: "Resident reply — confirmed appointment", source: "Twilio", outcome: "Received" },
+  { channel: "Letter", direction: "outbound", subject: "Tenancy review notice", source: "Civica Cx", outcome: "Issued" },
+  { channel: "Visit", direction: "outbound", subject: "Housing officer home visit", source: "Civica Cx", outcome: "Completed" },
+  { channel: "Call", direction: "inbound", subject: "Resident reported heating fault", source: "Salesforce", outcome: "Logged as repair" },
+];
+
+// Deterministic contact & engagement history for a household.
+export function communicationsFor(householdId: number): ContactEvent[] {
+  const r = rand(householdId * 751 + 5);
+  const n = 3 + Math.floor(r() * 4);
+  return Array.from({ length: n }, (_, i) => {
+    const base = CONTACTS[(householdId + i) % CONTACTS.length];
+    return { ...base, at: new Date(BASE - Math.floor((4 + r() * 180)) * DAY).toISOString() };
+  }).sort((a, b) => +new Date(b.at) - +new Date(a.at));
+}
+
 // SIMD decile (1 = most deprived) derived per locality for place context.
 const LOCALITY_SIMD: Record<string, number> = {
   "Greenock Central": 1, "Greenock East": 2, "Greenock West": 3, Gourock: 6,

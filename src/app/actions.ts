@@ -15,6 +15,7 @@ import { hasDb } from "@/db/view-types";
 import { demo, resetDemoStore } from "@/db/demo-store";
 import { resetDemoData } from "@/db/reset";
 import { ROLE_COOKIE, getRole } from "@/lib/roles";
+import { repairsAdapter } from "@/integrations/adapters";
 
 const ACTOR = "Demo User";
 const pad4 = (n: number) => String(n).padStart(4, "0");
@@ -239,6 +240,49 @@ export async function openCaseForHousehold(formData: FormData) {
   revalidatePath("/cases");
   revalidatePath("/");
   redirect(`/cases/${ref}`);
+}
+
+// Raise a repair via the repairs connector (demo mode). Returns a synthetic
+// work-order reference and records it on the case note + audit trail. Nothing
+// leaves the system; the connection state is Demo connector.
+export async function raiseRepair(formData: FormData) {
+  const ref = String(formData.get("ref"));
+  const propertyRef = String(formData.get("propertyRef") || "");
+  const category = String(formData.get("category") || "Damp & mould").trim() || "Damp & mould";
+  const description = String(formData.get("description") || "").trim() || `${category} inspection`;
+  if (!ref) return;
+  const adapter = repairsAdapter("plentific");
+  const result = adapter ? await adapter.createRepair({ propertyRef, category, description }) : { workOrderRef: "WO-DEMO", status: "scheduled" as const };
+  const body = `Repair raised via Plentific (demo): ${description} — work order ${result.workOrderRef} (${result.status}).`;
+  if (!hasDb()) {
+    const c = demo.findCase(ref);
+    if (c) demo.addNote(c.id, ref, "repair_raised", body, ACTOR);
+    return revalidateCase(ref);
+  }
+  const c = await dbLoadCase(ref);
+  if (!c) return;
+  await dbNote(c.id, ref, "repair_raised", body);
+  revalidateCase(ref);
+}
+
+// Notify a resident via GOV.UK Notify (demo mode). Simulates delivery and
+// preserves an audit event.
+export async function notifyResident(formData: FormData) {
+  const ref = String(formData.get("ref"));
+  const channel = String(formData.get("channel") || "SMS");
+  const message = String(formData.get("message") || "").trim() || "Appointment confirmation and welfare contact";
+  if (!ref) return;
+  const notificationRef = `NOTIFY-${String(Date.now()).slice(-6)}`;
+  const body = `${channel} sent to resident via GOV.UK Notify (demo): "${message}" — ${notificationRef}, delivery simulated.`;
+  if (!hasDb()) {
+    const c = demo.findCase(ref);
+    if (c) demo.addNote(c.id, ref, "resident_notified", body, ACTOR);
+    return revalidateCase(ref);
+  }
+  const c = await dbLoadCase(ref);
+  if (!c) return;
+  await dbNote(c.id, ref, "resident_notified", body);
+  revalidateCase(ref);
 }
 
 export async function setRole(formData: FormData) {

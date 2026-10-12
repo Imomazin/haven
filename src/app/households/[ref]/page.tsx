@@ -8,7 +8,9 @@ import { Card, SectionTitle, Definition } from "@/components/ui";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { RiskExplanation } from "@/components/risk-explanation";
 import { RiskBadge, StatusPill, UrgencyBadge, ConfidenceBadge } from "@/components/severity";
-import { label } from "@/lib/format";
+import { SourceBadge } from "@/components/source-badge";
+import { tenancyFor, communicationsFor, repairsForProperty } from "@/integrations/fixtures";
+import { label, formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +24,18 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
   const openCase = cases.find((c) => c.status !== "closed") ?? cases[0];
   const composition = compositionSummary(h);
   const flags = safeguardingFlags(h, a.band);
+  const officer = openCase?.ownerName ?? null;
+  const tenancy = tenancyFor(h.id, p.propertyType);
+  const comms = communicationsFor(h.id);
+  const appointments = repairsForProperty(p.id, p.dampHistoryCount, p.mouldHistoryCount, p.openRepairs)
+    .filter((r) => r.appointmentAt)
+    .map((r) => ({ at: r.appointmentAt!, label: r.description, meta: `${r.category} · ${r.contractor}`, status: r.status, source: r.source as string }))
+    .sort((x, y) => +new Date(y.at) - +new Date(x.at));
+  // Combined engagement chronology (contacts + appointments), newest first.
+  const chronology = [
+    ...comms.map((c) => ({ at: c.at, kind: c.channel as string, text: c.subject, meta: `${c.direction === "outbound" ? "Sent" : "Received"} · ${c.outcome}`, source: c.source as string })),
+    ...appointments.map((ap) => ({ at: ap.at, kind: "Appointment", text: ap.label, meta: ap.meta, source: ap.source })),
+  ].sort((x, y) => +new Date(y.at) - +new Date(x.at)).slice(0, 8);
 
   return (
     <div>
@@ -43,6 +57,10 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
             </div>
           </div>
           <div className="w-full max-w-xs rounded-lg bg-limestone-100 p-4">
+            <div className="mb-3 flex items-center justify-between gap-2 border-b border-graphite-200/70 pb-2">
+              <span className="field-label">Responsible officer</span>
+              <span className="text-sm font-medium text-ink-900">{officer ?? "Unassigned"}</span>
+            </div>
             <p className="field-label">Recommended next step</p>
             <p className="mt-1 text-sm font-semibold text-ink-900">{nextStep ? nextStep.label : "Monitor — no action indicated"}</p>
             {nextStep && <p className="mt-0.5 text-xs text-graphite-600">{nextStep.reason} · {nextStep.team}</p>}
@@ -117,6 +135,16 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
             )}
           </Card>
           <Card>
+            <SectionTitle>Tenancy</SectionTitle>
+            <dl>
+              <Definition term="Tenancy ref">{tenancy.ref}</Definition>
+              <Definition term="Type">{tenancy.type}</Definition>
+              <Definition term="Start date">{formatDate(tenancy.startDate)}</Definition>
+              <Definition term="Weekly rent">£{tenancy.weeklyRentGbp}</Definition>
+            </dl>
+            <p className="mt-2"><SourceBadge source={tenancy.source} reference={tenancy.ref} /></p>
+          </Card>
+          <Card>
             <SectionTitle>Neighbourhood</SectionTitle>
             <p className="text-sm text-graphite-600">
               This household sits within <span className="font-medium text-ink-900">{p.locality}</span>. Compare it against the wider area to see whether risk here is isolated or part of a local cluster.
@@ -127,6 +155,56 @@ export default async function HouseholdDetail({ params }: { params: Promise<{ re
             </div>
           </Card>
         </div>
+      </div>
+
+      {/* Engagement dossier */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-3">
+        <Card>
+          <SectionTitle sub="From connected communications channels">Contact &amp; engagement</SectionTitle>
+          <ul className="space-y-2.5">
+            {comms.map((c, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm">
+                <span className="mt-0.5 shrink-0 rounded border border-graphite-200 bg-limestone-50 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-graphite-600">{c.channel}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-ink-900">{c.subject}</p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-graphite-500">{formatDate(c.at)} · {c.direction === "outbound" ? "sent" : "received"} · {c.outcome} <SourceBadge source={c.source} /></p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card>
+          <SectionTitle sub="From connected repairs systems">Appointments</SectionTitle>
+          {appointments.length ? (
+            <ul className="space-y-2.5">
+              {appointments.slice(0, 6).map((ap, i) => (
+                <li key={i} className="text-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-ink-900">{ap.label}</p>
+                    <span className="shrink-0 text-xs font-medium capitalize text-graphite-600">{ap.status.replace("_", " ")}</span>
+                  </div>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-graphite-500">{formatDate(ap.at)} · {ap.meta} <SourceBadge source={ap.source} /></p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-graphite-400">No appointments on record.</p>
+          )}
+        </Card>
+
+        <Card>
+          <SectionTitle sub="Combined household activity">Chronology</SectionTitle>
+          <ol className="relative space-y-3 border-l border-graphite-200 pl-4">
+            {chronology.map((e, i) => (
+              <li key={i} className="relative text-sm">
+                <span aria-hidden className="absolute -left-[1.37rem] top-1 h-2 w-2 rounded-full border-2 border-white bg-terracotta-500" />
+                <p className="text-ink-900">{e.text}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-graphite-500">{formatDate(e.at)} · {e.kind} · {e.meta} <SourceBadge source={e.source} /></p>
+              </li>
+            ))}
+          </ol>
+        </Card>
       </div>
     </div>
   );
